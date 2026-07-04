@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="POSSystemConsole/POSSystemConsole.csproj" />
+  <Project Path="POSSystem.Application/POSSystem.Application.csproj" Id="506fdd54-f549-4a69-bb3a-47fabdf1b4c0" />
+  <Project Path="POSSystem.Console/POSSystem.Console.csproj" Id="fb8ab846-28e7-4c5d-8422-3705938113c5" />
+  <Project Path="POSSystem.Domain/POSSystem.Domain.csproj" Id="939f44a8-84de-4a03-a1de-d9252cf14520" />
+  <Project Path="POSSystem.Infrastructure/POSSystem.Infrastructure.csproj" Id="e7c19d34-f701-457e-b7da-7619d4bc5412" />
 </Solution>

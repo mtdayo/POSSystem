@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "POSSystem.Application": {
+      "commandName": "Project"
+    }
+  }
+}
