@@ -1,7 +1,6 @@
 ﻿Console.WriteLine("Hello, World!");
 
 string? input;
-//受け取りました。
 
 do
 {
