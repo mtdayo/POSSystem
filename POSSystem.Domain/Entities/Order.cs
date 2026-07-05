@@ -38,5 +38,10 @@ namespace POSSystem.Domain.Entities
 
             return item;
         }
+
+        public void Clear()
+        {
+            _items.Clear();
+        }
     }
 }

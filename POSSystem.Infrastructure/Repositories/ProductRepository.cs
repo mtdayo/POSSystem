@@ -1,24 +1,81 @@
 ﻿using POSSystem.Domain.Entities;
+using Microsoft.Data.Sqlite;
 
 namespace POSSystem.Infrastructure.Repositories
 {
     public class ProductRepository
     {
-        private readonly List<Product> _products = new()
-        {
-            new Product(1, "P001", "りんご", 100m, 100),
-            new Product(2, "P002", "みかん", 150m, 50),
-            new Product(3, "P003", "ばなな", 200m, 25)
-        };
+        private const string ConnectionString = @"Data Source=C:\Users\lawri\Documents\GitHub\POSSystem\POSSystem.Infrastructure\Database\pos.db";
+
 
         public IReadOnlyList<Product> GetAllProducts()
         {
-            return _products;
+            List<Product> products = new();
+
+            using var connection = new SqliteConnection(ConnectionString);
+
+            connection.Open();
+
+            string sql = """
+                SELECT
+                    Id,
+                    Code,
+                    Name,
+                    Price,
+                    Stock
+                FROM Products
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+
+            using var reader = command.ExecuteReader();
+
+            while(reader.Read())
+            {
+                products.Add(new Product(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.GetString(2),
+                    reader.GetDecimal(3),
+                    reader.GetInt32(4)));
+            }
+
+            return products;
         }
 
         public Product? GetProductByCode(string code)
         {
-            return _products.FirstOrDefault(p => p.Code == code);
+            using var connection = new SqliteConnection(ConnectionString);
+
+            connection.Open();
+
+            string sql = """
+                SELECT
+                    Id,
+                    Code,
+                    Name,
+                    Price,
+                    Stock
+                FROM Products
+                WHERE Code = @Code
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+            command.Parameters.AddWithValue("@Code", code);
+
+            using var reader = command.ExecuteReader();
+
+            if (reader.Read())
+            {
+                return new Product(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.GetString(2),
+                    reader.GetDecimal(3),
+                    reader.GetInt32(4));
+            }
+
+            return null;
         }
     }
 }

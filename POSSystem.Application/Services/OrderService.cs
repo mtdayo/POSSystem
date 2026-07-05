@@ -7,15 +7,6 @@ namespace POSSystem.Application.Services
 {
     public class OrderService
     {
-        public void showAllProduct(ProductService service)
-        {
-            Console.WriteLine("商品一覧");
-
-            foreach (var product in service.GetAllProducts())
-            {
-                Console.WriteLine($"コード: {product.Code}, 名前: {product.Name}, 価格: {product.Price}, 在庫: {product.Stock}");
-            }
-        }
 
         public void AddProduct(ProductService service, Order order)
         {
@@ -122,7 +113,7 @@ namespace POSSystem.Application.Services
             }
         }
 
-        public void showOrder(Order order)
+        public void ShowOrder(Order order)
         {
             Console.WriteLine();
             Console.WriteLine("注文内容:");

@@ -21,5 +21,17 @@ namespace POSSystem.Application.Services
         {
             return _repository.GetProductByCode(code);
         }
+
+        public void ShowAllProduct(ProductService service)
+        {
+            Console.WriteLine();
+
+            Console.WriteLine("商品一覧");
+
+            foreach (var product in service.GetAllProducts())
+            {
+                Console.WriteLine($"コード: {product.Code}, 名前: {product.Name}, 価格: {product.Price}, 在庫: {product.Stock}");
+            }
+        }
     }
 }

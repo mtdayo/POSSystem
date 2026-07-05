@@ -1,4 +1,5 @@
 ﻿using POSSystem.Domain.Entities;
+using POSSystem.Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,6 +8,13 @@ namespace POSSystem.Application.Services
 {
     public class CheckoutService
     {
+        private readonly SaleRepository _saleRepository;
+
+        public CheckoutService(SaleRepository saleRepository)
+        {
+            _saleRepository = saleRepository;
+        }
+
         public void Checkout(Order order)
         {
             decimal payment;
