@@ -1,4 +1,5 @@
 ﻿using POSSystem.Domain.Entities;
+using POSSystem.Infrastructure.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,6 +11,7 @@ namespace POSSystem.Application.Services
 
         public void AddProduct(ProductService service, Order order)
         {
+            ProductRepository reposiroty = new ProductRepository();
             int quantity;
 
             while (true)
@@ -53,6 +55,7 @@ namespace POSSystem.Application.Services
 
                 order.AddItem(productInfo, quantity);
                 productInfo.ReduceStock(quantity);
+                reposiroty.UpdateStock(productInfo);
                 Console.WriteLine($"{productInfo.Name}を{quantity}個追加しました。");
 
             }
@@ -60,6 +63,7 @@ namespace POSSystem.Application.Services
 
         public void RemoveProduct(ProductService service, Order order)
         {
+            ProductRepository reposiroty = new ProductRepository();
             int quantity;
 
             while (true)
@@ -100,6 +104,7 @@ namespace POSSystem.Application.Services
                     }
 
                     removeItem.Product.AddStock(quantity);
+                    reposiroty.UpdateStock(removeItem.Product);
                     Console.WriteLine($"{removeItem.Product.Name}を{quantity}個削除しました。");
                 }
                 catch (ArgumentOutOfRangeException ex)

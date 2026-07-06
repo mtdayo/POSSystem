@@ -77,5 +77,25 @@ namespace POSSystem.Infrastructure.Repositories
 
             return null;
         }
+
+        public void UpdateStock(Product product)
+        {
+            using var connection = new SqliteConnection(ConnectionString);
+
+            connection.Open();
+
+            string sql = """
+                UPDATE Products
+                SET Stock = @stock
+                WHERE Code = @code
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+
+            command.Parameters.AddWithValue("@stock", product.Stock);
+            command.Parameters.AddWithValue("@code", product.Code);
+
+            command.ExecuteNonQuery();
+        }
     }
 }

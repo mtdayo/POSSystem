@@ -48,11 +48,45 @@ while (true)
             order.Clear();
             break;
         case "6":
-            var sales = saleRepository.GetAllSales();
-            foreach (var s in sales)
+                Console.WriteLine();
+                Console.WriteLine("売上一覧");
+
+                var sales = saleRepository.GetAllSales();
+                foreach (var s in sales)
+                {
+                    Console.WriteLine($"Sale ID: {s.Id}, Date: {s.SaleDate}, Total: {s.TotalAmount}");
+                }
+
+            while (true)
             {
-                Console.WriteLine($"Sale ID: {s.Id}, Date: {s.SaleDate}, Total: {s.TotalAmount}");
-            }
+                Console.WriteLine();
+                Console.Write("売上IDを入力して下さい(0で戻る) : ");
+
+                if (!int.TryParse(Console.ReadLine(), out int saleId))
+                {
+                    Console.WriteLine("数値を入力してください。");
+                    continue;
+                }
+
+                if (saleId == 0)
+                {
+                    break;
+                }
+
+                var items = saleRepository.GetSaleItems(saleId);
+
+                if (items.Count == 0)
+                {
+                    Console.WriteLine("その売上IDは存在しません。");
+                    continue;
+                }
+
+                foreach (var item in items)
+                {
+                    Console.WriteLine($"Product: {item.Product.Name}, Quantity: {item.Quantity}, Subtotal: {item.Subtotal}");
+                }
+                Console.WriteLine();
+            } 
             break;
         case "0":
             return;
