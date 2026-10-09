@@ -1,0 +1,181 @@
+﻿@page "/Products"
+@rendermode InteractiveServer
+
+@using POSSystem.WebApp.Models;
+@using POSSystem.WebApp.Services;
+
+@inject ProductApiClient ProductApiClient
+
+<pageTitle>商品一覧</pageTitle>
+
+<h1>商品一覧</h1>
+
+@if (products == null)
+{
+    <p><em>読み込み中...</em></p>
+}
+else
+{
+    <!-- 検索フォーム・ソート -->
+    <div class="row mb-3">
+        <div class="col-md-5">
+            <label>商品名検索</label>
+            <input type="text" 
+            class="form-control"
+            @bind="searchText"
+            @bind:event="oninput"/>
+        </div>
+
+        <div class="col-md-3">
+            <label>並び順</label>
+            <select class="form-select" @bind="sortType">
+                <option value="">選択してください</option>
+                <option value="code">商品コード</option>
+                <option value="name">商品名</option>
+                <option value="price">価格</option>
+                <option value="stock">在庫数</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label>順序</label>
+            <select class="form-select" @bind="sortOrder">
+                <option value="asc">昇順</option>
+                <option value="desc">降順</option>
+            </select>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" @onclick="SearchProducts">検索</button>
+        </div>
+
+        <div>
+            <label></label>
+            <button class="btn btn-primary" @onclick="SearchReset">リセット</button>
+        </div>
+    </div>
+}
+
+@if (products.Count == 0)
+{
+    <p><em>商品が見つかりませんでした。</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>商品コード</th>
+                <th>商品名</th>
+                <th>価格</th>
+                <th>在庫数</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in products)
+            {
+                <tr>
+                    <td>@product.Code</td>
+                    <td>@product.Name</td>
+                    <td>@product.Price</td>
+                    <td>@product.Stock</td>
+                    <td>
+                        <a class="btn btn-primary btn-sm" href="/Products/Edit/@product.Code">編集</a>
+                        <button class="btn btn-danger ms-2" @onclick="() => DeleteProduct(product)">削除</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (deleteTarget != null)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">削除確認</h5>
+                        <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>商品コード: 
+                            <strong>@deleteTarget.Code</strong>
+                        </p>
+
+                        <p>商品名: 
+                            <strong>@deleteTarget.Name</strong>
+                        </p>
+                        <p>価格: 
+                            <strong>@deleteTarget.Price</strong>
+                        </p>
+                        <p>在庫数: 
+                            <strong>@deleteTarget.Stock</strong>
+                        </p>
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelDelete">キャンセル</button>
+                        <button type="button" class="btn btn-danger" @onclick="ConfirmDelete">削除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+@code {
+    private List<Product>? products = new List<Product>();
+
+    private Product? deleteTarget;
+
+    private string searchText = string.Empty;
+
+    private string sortType = "code";
+
+    private string sortOrder = "asc";
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await ProductApiClient.GetProductsAsync(searchText, sortType, sortOrder);
+    }
+
+    private void DeleteProduct(Product product)
+    {
+        deleteTarget = product;
+    }
+
+    private void CancelDelete()
+    {
+        deleteTarget = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (deleteTarget == null)
+        {
+            return;
+        }
+
+        var response = await ProductApiClient.DeleteProductAsync(deleteTarget.Code);
+
+        if (response.IsSuccessStatusCode)
+        {
+            products?.Remove(deleteTarget);
+            deleteTarget = null;
+            return;
+        }
+    }
+
+    private async Task SearchProducts()
+    {
+        products = await ProductApiClient.GetProductsAsync(searchText, sortType, sortOrder);
+    }
+
+    private async Task SearchReset()
+    {
+        products = await ProductApiClient.GetProductsAsync();
+    }
+}

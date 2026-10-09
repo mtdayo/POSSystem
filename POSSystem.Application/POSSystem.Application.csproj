@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.3.13" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\POSSystem.Domain\POSSystem.Domain.csproj" />
     <ProjectReference Include="..\POSSystem.Infrastructure\POSSystem.Infrastructure.csproj" />
   </ItemGroup>

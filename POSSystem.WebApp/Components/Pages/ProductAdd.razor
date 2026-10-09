@@ -1,0 +1,56 @@
+﻿@page "/Products/Add"
+@rendermode InteractiveServer
+
+@using POSSystem.WebApp.Models;
+@using POSSystem.WebApp.Services;
+
+@inject ProductApiClient ProductApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>商品追加</PageTitle>
+
+<h1>商品追加</h1>
+
+<div class="mb-3">
+    <label>商品コード</label>
+    <input type="text" class="form-control" @bind="request.Code" />
+</div>
+
+<div class="mb-3">
+    <label>商品名</label>
+    <input type="text" class="form-control" @bind="request.Name" />
+</div>
+
+<div class="mb-3">
+    <label>商品価格</label>
+    <input type="number" class="form-control" @bind="request.Price" />
+</div>
+
+<div class="mb-3">
+    <label>商品在庫</label>
+    <input type="number" class="form-control" @bind="request.Stock" />
+</div>
+
+<button class="btn btn-primary" @onclick="AddProduct">追加</button>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-danger mt-3">@message</div>
+}
+
+@code {
+    private AddProductRequest request = new ();
+    private string message = string.Empty;
+
+    private async Task AddProduct()
+    {
+        var response = await ProductApiClient.AddProductAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/Products");
+            return;
+        }
+        message = "商品追加に失敗しました。";
+    }
+}

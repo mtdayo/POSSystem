@@ -7,9 +7,9 @@ namespace POSSystem.Domain.Entities
     public class Product
     {
         public int Id { get; }
-        public String Code { get; }  //商品コード
-        public string Name { get; }
-        public decimal Price { get; }
+        public String Code { get; private set; }  //商品コード
+        public string Name { get; private set; }
+        public decimal Price { get; private set; }
         public int Stock { get; private set; }
 
         public Product(int id, String code, string name, decimal price, int stock)
@@ -44,5 +44,24 @@ namespace POSSystem.Domain.Entities
             }
             Stock += quantity;
         } 
+
+        public void Update(string name, decimal price, int stock)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("商品名は空白にできません。", nameof(name));
+            }
+            if (price < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(price), "価格は負の値にできません。");
+            }
+            if (stock < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(stock), "在庫は負の値にできません。");
+            }
+            Name = name;
+            Price = price;
+            Stock = stock;
+        }
     }
 }

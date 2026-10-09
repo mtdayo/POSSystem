@@ -1,0 +1,81 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+
+@using POSSystem.WebApp.Models
+@using POSSystem.WebApp.Services
+
+@inject AuthApiClient AuthApiClient
+@inject NavigationManager Navigation
+@inject AuthState AuthState
+
+<PageTitle>ログイン</PageTitle>
+
+<h1>ログイン</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        
+        <div class="mb-3">
+            <label class="form-label">ユーザー名</label>
+
+            <input type="text"
+                   class="form-control"
+                   @bind="username" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">パスワード</label>
+
+            <input type="password"
+                   class="form-control"
+                   @bind="password" />
+        </div>
+
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert-danger">
+                @errorMessage
+            </div>
+        }
+
+        <button class="btn btn-primary" @onclick="OnClickLogin">
+            ログイン
+        </button>
+    </div>
+</div>
+
+
+@code {
+    private string username = string.Empty;
+    private string password = string.Empty;
+    private string errorMessage = string.Empty;
+
+
+    private async Task OnClickLogin()
+    {
+        errorMessage = string.Empty;
+
+
+        var token = await AuthApiClient.LoginAsync(username, password);
+
+
+        if (token == null)
+        {
+            errorMessage = "ユーザー名もしくはパスワードが正しくありません。";
+
+            return;
+        }
+
+        //JWT認証成功
+        AuthState.SetToken(token);
+
+        Console.WriteLine($"Login側 JWT存在: {!string.IsNullOrEmpty(AuthState.Token)}");
+
+        Console.WriteLine($"Login側 AuthState: {AuthState.GetHashCode()}");
+
+
+        //認証成功時ページ移動
+        Navigation.NavigateTo("/Products");
+    }
+}

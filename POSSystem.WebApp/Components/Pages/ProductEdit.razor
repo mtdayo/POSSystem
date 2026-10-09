@@ -1,0 +1,87 @@
+﻿@page "/Products/Edit/{code}"
+
+@rendermode InteractiveServer
+
+@using POSSystem.WebApp.Models;
+@using POSSystem.WebApp.Services;
+
+@inject ProductApiClient ProductApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>商品編集</PageTitle>
+
+<h1>商品編集</h1>
+
+@if (loading)
+{
+    <p><em>商品情報を取得中...</em></p>
+}
+else if (product == null)
+{
+    <p><em>商品が見つかりませんでした。</em></p>
+}
+else
+{
+    <div class="mb-3">
+        <label>商品コード</label>
+        <input type="text" class="form-control" @bind="product.Code" disabled />
+    </div>
+    <div class="mb-3">
+        <label>商品名</label>
+        <input type="text" class="form-control" @bind="request.Name" />
+    </div>
+    <div class="mb-3">
+        <label>商品価格</label>
+        <input type="number" class="form-control" @bind="request.Price" />
+    </div>
+    <div class="mb-3">
+        <label>商品在庫</label>
+        <input type="number" class="form-control" @bind="request.Stock" />
+    </div>
+
+    <button class="btn btn-primary" @onclick="UpdateProduct">更新</button>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert alert-danger mt-3">@message</div>
+    }
+}
+@code {
+    [Parameter]
+    public string code { get; set; } = string.Empty;
+    
+    private Product? product;
+
+    private UpdateProductRequest request = new ();
+
+    private bool loading = true;
+
+    private string message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        product = await ProductApiClient.GetProductByCodeAsync(code);
+
+        if (product != null)
+        {
+            request.Name = product.Name;
+            request.Price = product.Price;
+            request.Stock = product.Stock;
+        }
+
+        loading = false;
+    }
+
+    private async Task UpdateProduct()
+    {
+        var response = await ProductApiClient.UpdateProductAsync(code, request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/Products");
+            return;
+        }
+
+        message = "商品更新に失敗しました。";
+    }
+}

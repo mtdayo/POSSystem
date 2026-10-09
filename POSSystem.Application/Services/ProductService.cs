@@ -22,16 +22,32 @@ namespace POSSystem.Application.Services
             return _repository.GetProductByCode(code);
         }
 
-        public void ShowAllProduct(ProductService service)
+        public void AddProduct (Product product)
         {
-            Console.WriteLine();
+            var existingProduct = _repository.GetProductByCode(product.Code);
 
-            Console.WriteLine("商品一覧");
-
-            foreach (var product in service.GetAllProducts())
+            if (existingProduct != null)
             {
-                Console.WriteLine($"コード: {product.Code}, 名前: {product.Name}, 価格: {product.Price}, 在庫: {product.Stock}");
+                throw new InvalidOperationException($"商品コード '{product.Code}' は既に存在します。");
             }
+
+
+            _repository.AddProduct(product);
+        }
+
+        public bool UpdateProduct(Product product)
+        {
+            return _repository.UpdateProduct(product);
+        }
+
+        public bool DeleteProduct(string code)
+        {
+            return _repository.DeleteProduct(code);
+        }
+
+        public List<Product> SearchProducts(string? search, string sortBy, string sortOrder)
+        {
+            return _repository.SearchProducts(search, sortBy, sortOrder);
         }
     }
 }
