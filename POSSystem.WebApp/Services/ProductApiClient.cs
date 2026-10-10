@@ -8,15 +8,15 @@ namespace POSSystem.WebApp.Services
     public class ProductApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly AuthState _authState;
+        private readonly JwtAuthenticationStateProvider _authenticationProvider;
 
-        public ProductApiClient(HttpClient httpClient, AuthState authState)
+        public ProductApiClient(HttpClient httpClient, JwtAuthenticationStateProvider authenticationProvider)
         {
             _httpClient = httpClient;
-            _authState = authState;
+            _authenticationProvider = authenticationProvider;
 
             //JWTの存在を確認するために、AuthStateのハッシュコードを出力
-            Console.WriteLine($"ProductApiClient側 AuthState: {_authState.GetHashCode()}");
+            //Console.WriteLine($"ProductApiClient側 AuthState: {_authState.GetHashCode()}");
         }
 
 
@@ -26,9 +26,9 @@ namespace POSSystem.WebApp.Services
         /// <param name="request"></param>
         private void AddAuthorizationHeader(HttpRequestMessage request)
         {
-            if (!string.IsNullOrEmpty(_authState.Token))
+            if (!string.IsNullOrEmpty(_authenticationProvider.Token))
             {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _authState.Token);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _authenticationProvider.Token);
             }
         }
 
@@ -94,7 +94,7 @@ namespace POSSystem.WebApp.Services
             AddAuthorizationHeader(httpRequest);
 
             // JWTの存在を確認するために、AuthStateのハッシュコードを出力
-            Console.WriteLine($"ProductApiClient側 JWT存在: {!string.IsNullOrEmpty(_authState.Token)}");
+            //Console.WriteLine($"ProductApiClient側 JWT存在: {!string.IsNullOrEmpty(_authState.Token)}");
             return await _httpClient.SendAsync(httpRequest);
         }
 

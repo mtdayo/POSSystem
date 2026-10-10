@@ -7,12 +7,11 @@ namespace POSSystem.WebApp.Services
     public class AuthApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly AuthState _authState;
+        //private readonly AuthState _authState;
 
-        public AuthApiClient(HttpClient httpClient, AuthState authState)
+        public AuthApiClient(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _authState = authState;
         }
 
 
@@ -31,7 +30,7 @@ namespace POSSystem.WebApp.Services
                 return null;
             }
 
-            var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            var result = await response.Content.ReadFromJsonAsync<Models.LoginResponse>();
 
             return result?.Token;
         }

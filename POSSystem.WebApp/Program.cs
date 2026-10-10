@@ -19,13 +19,14 @@ builder.Services.AddHttpClient<AuthApiClient>(client =>
 });
 
 //依存性注入の設定
-builder.Services.AddSingleton<AuthState>(); //テスト用
+//builder.Services.AddSingleton<AuthState>(); //テスト用
 
 //builder.Services.AddScoped<AuthState>(); //本番用
 
 //認証状態
 builder.Services.AddAuthenticationCore();
-builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
+builder.Services.AddScoped<JwtAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(services => services.GetRequiredService<JwtAuthenticationStateProvider>());
 
 var app = builder.Build();
 

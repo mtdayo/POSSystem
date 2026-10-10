@@ -1,12 +1,11 @@
 ﻿@page "/login"
-@rendermode InteractiveServer
 
 @using POSSystem.WebApp.Models
 @using POSSystem.WebApp.Services
 
 @inject AuthApiClient AuthApiClient
 @inject NavigationManager Navigation
-@inject AuthState AuthState
+@inject JwtAuthenticationStateProvider AuthenticationProvider
 
 <PageTitle>ログイン</PageTitle>
 
@@ -60,7 +59,7 @@
         var token = await AuthApiClient.LoginAsync(username, password);
 
 
-        if (token == null)
+        if (string.IsNullOrWhiteSpace(token))
         {
             errorMessage = "ユーザー名もしくはパスワードが正しくありません。";
 
@@ -68,11 +67,11 @@
         }
 
         //JWT認証成功
-        AuthState.SetToken(token);
+        AuthenticationProvider.SetToken(token);
 
-        Console.WriteLine($"Login側 JWT存在: {!string.IsNullOrEmpty(AuthState.Token)}");
+        //Console.WriteLine($"Login側 JWT存在: {!string.IsNullOrEmpty(AuthState.Token)}");
 
-        Console.WriteLine($"Login側 AuthState: {AuthState.GetHashCode()}");
+        //Console.WriteLine($"Login側 AuthState: {AuthState.GetHashCode()}");
 
 
         //認証成功時ページ移動

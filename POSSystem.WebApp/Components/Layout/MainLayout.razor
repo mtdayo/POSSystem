@@ -1,10 +1,9 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using POSSystem.WebApp.Services
 
-@inject AuthState AuthState
+@inject JwtAuthenticationStateProvider AuthenticationProvider
 @inject NavigationManager Navigation
 
-@implements IDisposable
 
 @inherits LayoutComponentBase
 
@@ -42,28 +41,28 @@
 </div>
 
 @code {
-    protected override void OnInitialized()
+    // protected override void OnInitialized()
+    // {
+    //     Console.WriteLine($"MainLayout側 AuthState: {AuthState.GetHashCode()}");
+
+    //     AuthState.OnChange += HandleAuthStateChanged;
+    // }
+
+    // private void HandleAuthStateChanged()
+    // {
+    //     InvokeAsync(StateHasChanged);
+    // }
+
+    // public void Dispose()
+    // {
+    //     AuthState.OnChange -= HandleAuthStateChanged;
+
+    // }
+
+    private void Logout()
     {
-        Console.WriteLine($"MainLayout側 AuthState: {AuthState.GetHashCode()}");
-
-        AuthState.OnChange += HandleAuthStateChanged;
-    }
-
-    private void HandleAuthStateChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        AuthState.OnChange -= HandleAuthStateChanged;
-
-    }
-
-    private async Task Logout()
-    {
-        AuthState.Logout();
-        Navigation.NavigateTo("Login");
+        AuthenticationProvider.Logout();
+        Navigation.NavigateTo("/Login");
     }
 
 }
