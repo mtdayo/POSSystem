@@ -3,78 +3,59 @@
 @using POSSystem.WebApp.Models
 @using POSSystem.WebApp.Services
 
+@using Microsoft.AspNetCore.Components
+
 @inject AuthApiClient AuthApiClient
 @inject NavigationManager Navigation
-@inject JwtAuthenticationStateProvider AuthenticationProvider
 
 <PageTitle>ログイン</PageTitle>
 
 <h1>ログイン</h1>
 
-<div class="row">
-    <div class="col-md-6">
-        
-        <div class="mb-3">
-            <label class="form-label">ユーザー名</label>
+@if (Error)
+{
+    <div class="alert alert-danger">
+        ユーザー名もしくはパスワードが正しくありません
+    </div>
+}
 
-            <input type="text"
+<form method="post" action="/auth/login">
+    <AntiforgeryToken />
+        <div class="mb-3">
+            <label for="username" class="form-label">
+                ユーザー名
+            </label>
+
+            <input id="username"
+                   name="username"
+                   type="text"
                    class="form-control"
-                   @bind="username" />
+                   autocomplete="username"
+                   required />
         </div>
 
         <div class="mb-3">
-            <label class="form-label">パスワード</label>
+            <label for="password" class="form-label">
+                パスワード
+            </label>
 
-            <input type="password"
+            <input id="password"
+                   name="password"
+                   type="password"
                    class="form-control"
-                   @bind="password" />
+                   autocomplete="current-password"
+                   required />
         </div>
 
-
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert-danger">
-                @errorMessage
-            </div>
-        }
-
-        <button class="btn btn-primary" @onclick="OnClickLogin">
+        <button type="submit" class="btn btn-primary">
             ログイン
         </button>
-    </div>
-</div>
+</form>
 
 
 @code {
-    private string username = string.Empty;
-    private string password = string.Empty;
-    private string errorMessage = string.Empty;
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorQuery { get; set; }
 
-
-    private async Task OnClickLogin()
-    {
-        errorMessage = string.Empty;
-
-
-        var token = await AuthApiClient.LoginAsync(username, password);
-
-
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            errorMessage = "ユーザー名もしくはパスワードが正しくありません。";
-
-            return;
-        }
-
-        //JWT認証成功
-        AuthenticationProvider.SetToken(token);
-
-        //Console.WriteLine($"Login側 JWT存在: {!string.IsNullOrEmpty(AuthState.Token)}");
-
-        //Console.WriteLine($"Login側 AuthState: {AuthState.GetHashCode()}");
-
-
-        //認証成功時ページ移動
-        Navigation.NavigateTo("/Products");
-    }
+    private bool Error => ErrorQuery == "1";
 }

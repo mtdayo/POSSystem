@@ -1,7 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @using POSSystem.WebApp.Services
 
-@inject JwtAuthenticationStateProvider AuthenticationProvider
 @inject NavigationManager Navigation
 
 
@@ -19,7 +18,13 @@
 
             <Authorized>
                 <a href="mypage">マイページ</a>
-                <button type="button" class="btn btn-link nav-link text-dark" @onclick="Logout">ログアウト</button>
+                
+                <form method="post" action="/auth/logout">
+                    <AntiforgeryToken />
+                        <button type="submit" class="btn btn-link nav-link text-dark">
+                            ログアウと
+                        </button>
+                </form>
             </Authorized>
             <NotAuthorized>
                 <a href="login">ログイン</a>
@@ -58,11 +63,5 @@
     //     AuthState.OnChange -= HandleAuthStateChanged;
 
     // }
-
-    private void Logout()
-    {
-        AuthenticationProvider.Logout();
-        Navigation.NavigateTo("/Login");
-    }
 
 }

@@ -1,2 +1,18 @@
 # POSSystem
 
+課題
+① 認証が必要なページを保護する
+今の AuthorizeView は、ログイン状態に応じて表示を切り替えるためのものです。表示を隠すだけでは、ページや処理へのアクセス制御を保証できません。
+商品管理ページなどにログインを必須とするなら、Blazorのルーティング側で認証状態を確認し、必要なページには @attribute [Authorize] を設定します。Routes.razor 側も AuthorizeRouteView などを使って認可を処理できる構成か確認してください。
+② Cookieのセキュリティ設定を確認する
+以前の設定で、次の項目が入っているか確認してください。
+- HttpOnly = true：JavaScriptからCookieを直接読み取れないようにする
+- SecurePolicy = CookieSecurePolicy.Always：HTTPS接続でのみCookieを送信する
+- SameSite = SameSiteMode.Lax：クロスサイトでのCookie送信を制限する
+- 有効期限とスライディング有効期限を設定する
+また、ログイン・ログアウトのPOSTフォームで AntiforgeryToken を使い、コントローラー側でもCSRF対策が有効になっていることを確認しましょう。
+③ Cookie内のJWTの保存方法を見直す
+現在の実装では、JWTを api_access_token というClaimに保存してCookieを発行しています。
+これは学習段階の実装としては動作確認に使えますが、本番運用を意識するなら、JWTをCookie内に直接持たせる方式は改善したいところです。CookieはASP.NET Coreの保護機構で暗号化・保護されますが、JWTを含めるとCookieが大きくなる可能性があります。サーバー側にトークンを保存し、Cookieにはセッション識別情報だけを持たせる方式などが候補です。
+④ ログアウト時のJWTの扱いを理解する
+Cookieを削除すると、Webアプリ側のログイン状態は終了します。ただし、Web APIが発行したJWT自体は、期限切れなどになるまで有効な場合があります。 今後、即時失効まで必要にするなら、API側のトークン失効設計も検討します。

@@ -1,12 +1,34 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using POSSystem.WebApp.Components;
 using POSSystem.WebApp.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using POSSystem.WebApp.Components.Pages;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+//Cookie認証を実装
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "POSSystem.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+
+        //未認証時はログイン画面ほ以降
+        options.LoginPath = "/ Login";
+        options.AccessDeniedPath = "/forbidden";
+    });
+
+
 
 builder.Services.AddHttpClient<ProductApiClient>(client =>
 {
@@ -18,6 +40,11 @@ builder.Services.AddHttpClient<AuthApiClient>(client =>
     client.BaseAddress = new Uri(builder.Configuration["WebApiBaseAddress"] ?? "https://localhost:7030/");
 });
 
+builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
+
+builder.Services.AddControllersWithViews();
+
 //依存性注入の設定
 //builder.Services.AddSingleton<AuthState>(); //テスト用
 
@@ -25,8 +52,6 @@ builder.Services.AddHttpClient<AuthApiClient>(client =>
 
 //認証状態
 builder.Services.AddAuthenticationCore();
-builder.Services.AddScoped<JwtAuthenticationStateProvider>();
-builder.Services.AddScoped<AuthenticationStateProvider>(services => services.GetRequiredService<JwtAuthenticationStateProvider>());
 
 var app = builder.Build();
 
@@ -40,7 +65,12 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseAntiforgery();
+
+app.MapControllers();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

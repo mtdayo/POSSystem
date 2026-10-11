@@ -2,18 +2,19 @@
 using System.Runtime.CompilerServices;
 using System.Net.Http.Headers;
 using POSSystem.WebApp.Models;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace POSSystem.WebApp.Services
 {
     public class ProductApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly JwtAuthenticationStateProvider _authenticationProvider;
+        private readonly AuthenticationStateProvider _authenticationStateProvider;
 
-        public ProductApiClient(HttpClient httpClient, JwtAuthenticationStateProvider authenticationProvider)
+        public ProductApiClient(HttpClient httpClient, AuthenticationStateProvider authenticationStateProvider)
         {
             _httpClient = httpClient;
-            _authenticationProvider = authenticationProvider;
+            _authenticationStateProvider = authenticationStateProvider;
 
             //JWTの存在を確認するために、AuthStateのハッシュコードを出力
             //Console.WriteLine($"ProductApiClient側 AuthState: {_authState.GetHashCode()}");
@@ -24,13 +25,13 @@ namespace POSSystem.WebApp.Services
         /// Authorizationヘッダーを追加するためのメソッド
         /// </summary>
         /// <param name="request"></param>
-        private void AddAuthorizationHeader(HttpRequestMessage request)
-        {
-            if (!string.IsNullOrEmpty(_authenticationProvider.Token))
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _authenticationProvider.Token);
-            }
-        }
+        //private void AddAuthorizationHeader(HttpRequestMessage request)
+        //{
+        //    if (!string.IsNullOrEmpty(_authenticationProvider.Token))
+        //    {
+        //        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _authenticationProvider.Token);
+        //    }
+        //}
 
 
         /// <summary>
@@ -73,9 +74,10 @@ namespace POSSystem.WebApp.Services
         /// <returns></returns>
         public async Task<HttpResponseMessage> AddProductAsync(AddProductRequest request)
         {
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/Products");
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/Products");
             httpRequest.Content = JsonContent.Create(request);
-            AddAuthorizationHeader(httpRequest);
+
+            await AddAuthorizationHeaderAsync(httpRequest);
             return await _httpClient.SendAsync(httpRequest);
         }
 
@@ -88,13 +90,15 @@ namespace POSSystem.WebApp.Services
         /// <returns></returns>
         public async Task<HttpResponseMessage> UpdateProductAsync(string code, UpdateProductRequest request)
         {
-            var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"api/Products/{code}");
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Put, $"api/Products/{code}");
 
             httpRequest.Content = JsonContent.Create(request);
-            AddAuthorizationHeader(httpRequest);
 
             // JWTの存在を確認するために、AuthStateのハッシュコードを出力
             //Console.WriteLine($"ProductApiClient側 JWT存在: {!string.IsNullOrEmpty(_authState.Token)}");
+
+            await AddAuthorizationHeaderAsync(httpRequest);
+
             return await _httpClient.SendAsync(httpRequest);
         }
 
@@ -106,9 +110,35 @@ namespace POSSystem.WebApp.Services
         /// <returns></returns>
         public async Task<HttpResponseMessage> DeleteProductAsync(string code)
         {
-            var httpRequest = new HttpRequestMessage(HttpMethod.Delete, $"api/Products/{code}");
-            AddAuthorizationHeader(httpRequest);
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Delete, $"api/Products/{code}");
+
+            await AddAuthorizationHeaderAsync(httpRequest);
+
             return await _httpClient.SendAsync(httpRequest);
+        }
+
+        /// <summary>
+        /// JWTを取得するメソッド
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private async Task AddAuthorizationHeaderAsync(HttpRequestMessage request)
+        {
+            var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            var token = user.FindFirst("api_access_token")?.Value;
+
+            if(!string.IsNullOrWhiteSpace(token))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
         }
     }
 }
