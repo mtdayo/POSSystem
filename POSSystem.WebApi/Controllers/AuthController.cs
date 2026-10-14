@@ -42,6 +42,17 @@ namespace POSSystem.WebApi.Controllers
                 new Claim("IsEmployee", account.IsEmployee.ToString().ToLower())
             };
 
+            if (account.IsEmployee)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Employee"));
+            }
+
+            //従業員のJWTにEmployee付与
+            if (account.IsEmployee)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Employee"));
+            }
+
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
 
@@ -58,7 +69,8 @@ namespace POSSystem.WebApi.Controllers
 
             return Ok(new
             {
-                token = tokenString
+                token = tokenString,
+                isEmployee = account.IsEmployee
             });
         }
 
@@ -67,14 +79,14 @@ namespace POSSystem.WebApi.Controllers
         {
             try
             {
-                _accountService.Resister(request.Username, request.Password, request.IsEmployee);
+                _accountService.Resister(request.Username, request.Password);
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new {message = ex.Message});
             }
 
-            return Ok("アカウントが作成されました。");
+            return Ok(new {message = "会員登録が完了しました。"});
         }
     }
 }

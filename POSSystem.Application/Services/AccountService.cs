@@ -41,22 +41,32 @@ namespace POSSystem.Application.Services
         }
 
         // アカウント登録用メソッド
-        public void Resister(string username, string password, bool isEmployee)
+        public void Resister(string username, string password)
         {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                throw new InvalidOperationException("ユーザー名を入力してください。");
+            }
+
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                throw new InvalidOperationException("パスワードを入力してください。");
+            }
+
 
             //ユーザー名の重複チェック
             var exstingAccount = _repository.GetAccount(username);
 
             if (exstingAccount != null)
             {
-                throw new Exception("そのユーザー名は既に使用されています。");
+                throw new InvalidOperationException("そのユーザー名は既に使用されています。");
             }
 
-            var dummyAccount = new Account(0, username, "", isEmployee);
+            var dummyAccount = new Account(0, username, "", false);
 
             string passwordHash = _passwordHasher.HashPassword(dummyAccount, password);
 
-            var account = new Account(0, username, passwordHash, isEmployee);
+            var account = new Account(0, username, passwordHash, false);
 
             _repository.AddAccount(account);
         }

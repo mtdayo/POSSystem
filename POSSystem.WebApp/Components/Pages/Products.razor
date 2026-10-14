@@ -1,7 +1,8 @@
 ﻿@page "/Products"
 
-@using POSSystem.WebApp.Models;
-@using POSSystem.WebApp.Services;
+@using POSSystem.WebApp.Models
+@using POSSystem.WebApp.Services
+@using Microsoft.AspNetCore.Components.Authorization
 
 @inject ProductApiClient ProductApiClient
 
@@ -53,6 +54,16 @@ else
             <label></label>
             <button class="btn btn-primary" @onclick="SearchReset">リセット</button>
         </div>
+
+        <div>
+
+        </div>
+
+        <div>
+            <a href="/Products/Add" class="btn btn-primary btn-sm">
+                あああ
+            </a>
+        </div>
     </div>
 }
 
@@ -69,7 +80,13 @@ else
                 <th>商品名</th>
                 <th>価格</th>
                 <th>在庫数</th>
-                <th>操作</th>
+
+                <AuthorizeView Roles="Employee">
+                    <Authorized>
+                        <th>操作</th>
+                    </Authorized>
+                </AuthorizeView>
+
             </tr>
         </thead>
         <tbody>
@@ -80,10 +97,15 @@ else
                     <td>@product.Name</td>
                     <td>@product.Price</td>
                     <td>@product.Stock</td>
-                    <td>
-                        <a class="btn btn-primary btn-sm" href="/Products/Edit/@product.Code">編集</a>
-                        <button class="btn btn-danger ms-2" @onclick="() => DeleteProduct(product)">削除</button>
-                    </td>
+
+                    <AuthorizeView Roles="Employee">
+                        <Authorized>
+                            <td>
+                                <a class="btn btn-primary btn-sm" href="/Products/Edit/@product.Code">編集</a>
+                                <button class="btn btn-danger ms-2" @onclick="() => DeleteProduct(product)">削除</button>
+                            </td>
+                        </Authorized>
+                    </AuthorizeView>
                 </tr>
             }
         </tbody>

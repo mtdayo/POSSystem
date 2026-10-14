@@ -19,6 +19,13 @@
     </div>
 }
 
+@if (ResistrationCompleted)
+{
+    <div class="alert alert-success">
+        会員登録が完了しました。ログインしてください。
+    </div>
+}
+
 <form method="post" action="/auth/login">
     <AntiforgeryToken />
         <div class="mb-3">
@@ -58,4 +65,10 @@
     public string? ErrorQuery { get; set; }
 
     private bool Error => ErrorQuery == "1";
+
+    [SupplyParameterFromQuery(Name = "resistered")]
+    public string? Resistered { get; set; }
+
+    private bool ResistrationCompleted => Resistered == "1";
+
 }

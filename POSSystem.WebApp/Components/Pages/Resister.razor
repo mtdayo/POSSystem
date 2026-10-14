@@ -1,0 +1,97 @@
+﻿@page "/resister"
+
+@using POSSystem.WebApp.Models
+@using POSSystem.WebApp.Services
+
+@using Microsoft.AspNetCore.Components
+
+@inject AuthApiClient AuthApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>会員登録</PageTitle>
+
+<h1>会員登録</h1>
+
+@if (Error == "empty")
+{
+    <div class="alert alert-danger">
+        ユーザー名とパスワードを入力してください。
+    </div>
+}
+else if (Error == "password")
+{
+    <div class="alert alert-danger">
+        パスワードが一致しません。
+    </div>
+}
+else if (Error == "duplicate")
+{
+    <div class="alert alert-danger">
+        そのユーザー名は既に使用されています。
+    </div>
+}
+else if (Error == "failed")
+{
+    <div class="alert alert-danger">
+        登録に失敗しました。入力内容を確認してください。
+    </div>
+}
+
+<form method="post" action="/auth/resister">
+    <AntiforgeryToken />
+        <div class="mb-3">
+            <label for="username" class="form-label">
+                ユーザー名
+            </label>
+
+            <input id="username"
+                   name="username"
+                   type="text"
+                   class="form-control"
+                   autocomplete="username"
+                   required
+                   maxlength="50" />
+        </div>
+
+        <div class="mb-3">
+            <label for="password" class="form-label">
+                パスワード
+            </label>
+
+            <input id="password"
+                   name="password"
+                   type="password"
+                   class="form-control"
+                   autocomplete="new-password"
+                   required />
+        </div>
+
+        <div class="mb-3">
+            <label for="password" class="form-label">
+                パスワード (確認)
+            </label>
+
+            <input id="confirmPassword"
+                   name="confirmPassword"
+                   type="password"
+                   class="form-control"
+                   autocomplete="new-password"
+                   required
+                   minlength="8" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            登録
+        </button>
+
+        <a href="/login" class="btn btn-link">
+            ログインへ戻る
+        </a>
+</form>
+
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+
+    private string? Error { get; set; }
+}

@@ -22,12 +22,13 @@
                 <form method="post" action="/auth/logout">
                     <AntiforgeryToken />
                         <button type="submit" class="btn btn-link nav-link text-dark">
-                            ログアウと
+                            ログアウト
                         </button>
                 </form>
             </Authorized>
             <NotAuthorized>
                 <a href="login">ログイン</a>
+                <a href="resister">会員登録</a>
             </NotAuthorized>
 
         </AuthorizeView>

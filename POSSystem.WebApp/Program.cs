@@ -24,7 +24,7 @@ builder.Services
         options.SlidingExpiration = true;
 
         //未認証時はログイン画面ほ以降
-        options.LoginPath = "/ Login";
+        options.LoginPath = "/Login";
         options.AccessDeniedPath = "/forbidden";
     });
 

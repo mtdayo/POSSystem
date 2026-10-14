@@ -39,7 +39,7 @@ namespace POSSystem.WebApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = "EmployeeOnly")]
+        [Authorize(Roles = "EmployeeOnly")]
         public ActionResult AddProduct([FromBody] AddProductRequest request)
         {
 
@@ -63,7 +63,7 @@ namespace POSSystem.WebApi.Controllers
         }
 
         [HttpPut("{code}")]
-        [Authorize(Policy = "EmployeeOnly")]
+        [Authorize(Roles = "Employee")]
         public ActionResult UpdateProduct(string code, [FromBody] UpdateProductRequest request)
         {
             var product = _productService.GetProductByCode(code);
@@ -81,7 +81,7 @@ namespace POSSystem.WebApi.Controllers
         }
 
         [HttpDelete("{code}")]
-        [Authorize(Policy = "EmployeeOnly")]
+        [Authorize(Roles = "Employee")]
         public ActionResult DeleteProduct(string code)
         {
             var deleted = _productService.DeleteProduct(code);
