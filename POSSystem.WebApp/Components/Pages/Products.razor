@@ -50,7 +50,7 @@ else
             <button class="btn btn-primary" @onclick="SearchProducts">検索</button>
         </div>
 
-        <div>
+        <div class="d-flex mt-1">
             <label></label>
             <button class="btn btn-primary" @onclick="SearchReset">リセット</button>
         </div>
@@ -59,11 +59,15 @@ else
 
         </div>
 
-        <div>
-            <a href="/Products/Add" class="btn btn-primary btn-sm">
-                あああ
-            </a>
-        </div>
+        <AuthorizeView Roles="Employee">
+            <Authorized>
+                <div class="mt-5 mb-1">
+                    <a href="/Products/Add" class="btn btn-primary btn-sm">
+                        商品追加
+                    </a>
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </div>
 }
 
