@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using POSSystem.WebApp.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace POSSystem.WebApp.Controllers
 {
@@ -31,6 +32,7 @@ namespace POSSystem.WebApp.Controllers
             //APIのログイン成功を前提にcookieの識別情報を作る
             var claims = new List<Claim>
             {
+                new(ClaimTypes.NameIdentifier, result.AccountId.ToString()),
                 new(ClaimTypes.Name, username),
                 new("api_access_token", result.Token),
                 new("IsEmployee", result.IsEmployee.ToString().ToLower())
@@ -46,7 +48,16 @@ namespace POSSystem.WebApp.Controllers
 
             var principal = new ClaimsPrincipal(identity);
 
+            Console.WriteLine($"ログイン結果 IsEmployee: {result.IsEmployee}");
+
+            foreach (var claim in claims)
+            {
+                Console.WriteLine($"Cookieに設定するクレーム: {claim.Type} = {claim.Value}");
+            }
+
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+            Console.WriteLine($"ログイン中のアカウントID : {result.AccountId}");
 
             return Redirect("/Products");
 

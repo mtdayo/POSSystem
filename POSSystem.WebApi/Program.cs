@@ -22,6 +22,8 @@ builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<AccountService>();
 builder.Services.AddScoped<AccountRepository>();
+builder.Services.AddScoped<SaleRepository>();
+builder.Services.AddScoped<CheckoutService>();
 
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>

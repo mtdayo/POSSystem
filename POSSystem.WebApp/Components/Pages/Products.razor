@@ -4,7 +4,10 @@
 @using POSSystem.WebApp.Services
 @using Microsoft.AspNetCore.Components.Authorization
 
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ProductApiClient ProductApiClient
+@inject CartService Cart
+
 
 <pageTitle>商品一覧</pageTitle>
 
@@ -29,7 +32,6 @@ else
         <div class="col-md-3">
             <label>並び順</label>
             <select class="form-select" @bind="sortType">
-                <option value="">選択してください</option>
                 <option value="code">商品コード</option>
                 <option value="name">商品名</option>
                 <option value="price">価格</option>
@@ -50,20 +52,21 @@ else
             <button class="btn btn-primary" @onclick="SearchProducts">検索</button>
         </div>
 
-        <div>
+        <div class="d-flex gap-2 mt-3">
             <label></label>
             <button class="btn btn-primary" @onclick="SearchReset">リセット</button>
         </div>
 
-        <div>
+        <AuthorizeView Roles="Employee">
+            <Authorized>
+                <div class="d-flex gap-2 mt-3">
+                    <a href="/Products/Add" class="btn btn-primary btn-sm">
+                        商品追加
+                    </a>
+                </div>
+            </Authorized>
+        </AuthorizeView>
 
-        </div>
-
-        <div>
-            <a href="/Products/Add" class="btn btn-primary btn-sm">
-                あああ
-            </a>
-        </div>
     </div>
 }
 
@@ -87,6 +90,11 @@ else
                     </Authorized>
                 </AuthorizeView>
 
+                @if(isGeneralUser)
+                {
+                    <th>操作</th>
+                }
+
             </tr>
         </thead>
         <tbody>
@@ -106,10 +114,34 @@ else
                             </td>
                         </Authorized>
                     </AuthorizeView>
+
+                    @if(isGeneralUser)
+                    {
+                        <td>
+                            <input type="number"
+                                   class="form-control form-control-sm"
+                                   min="1"
+                                   max="product.Stock"
+                                   @bind="quantities[product.Code]"
+                                   @bind:after="() => ValidateQuantity(product)"
+                                   style="width: 90px;" />
+
+                            <button class="btn btn-success btn-sm" disabled="@(product.Stock <= 0)" @onclick="() => AddToCart(product)">
+                                カートに入れる
+                            </button>
+                        </td>
+                    }
                 </tr>
             }
         </tbody>
     </table>
+
+    @if (!string.IsNullOrEmpty(cartMessage))
+    {
+        <div class="alert @(cartMessageIsError ? "alert-danger" : "alert-success")">
+            @cartMessage
+        </div>
+    }
 
     @if (deleteTarget != null)
     {
@@ -156,11 +188,58 @@ else
 
     private string sortOrder = "asc";
 
+    private bool isGeneralUser;
 
+    private string? cartMessage;
+
+    private bool cartMessageIsError;
+
+    private Dictionary<string, int> quantities = new();
+
+
+
+    private void InitalizeQuantities()
+    {
+        if (products == null)
+        {
+            return;
+        }
+
+        foreach (var product in products)
+        {
+            if(!quantities.ContainsKey(product.Code))
+            {
+                quantities[product.Code] = 1;
+            }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        var user = authState.User;
+
+        var employeeValue = user.FindFirst("IsEmployee")?.Value;
+
+
+
+        //ログイン済み且つEmployeeフラグが0の場合のみ一般ユーザーとする
+        isGeneralUser = user.Identity?.IsAuthenticated == true &&
+                        string.Equals(
+                            employeeValue,
+                            "false",
+                            StringComparison.OrdinalIgnoreCase);
+
         products = await ProductApiClient.GetProductsAsync(searchText, sortType, sortOrder);
+
+
+        InitalizeQuantities();
+
+        if(user.Identity?.IsAuthenticated == true)
+        {
+            await Cart.LoadCartAsync();
+        }
     }
 
     private void DeleteProduct(Product product)
@@ -198,5 +277,36 @@ else
     private async Task SearchReset()
     {
         products = await ProductApiClient.GetProductsAsync();
+    }
+
+    private void AddToCart(Product product)
+    {
+        if(!quantities.TryGetValue(product.Code, out int quantity))
+        {
+            return;
+        }
+
+        bool success = Cart.AddProduct(product, quantity);
+
+        cartMessageIsError = !success;
+        cartMessage = success ? $"{product.Name}を{quantities[product.Code]}個カートに追加しました。" : Cart.ErrorMessage;
+    }
+
+    private void ValidateQuantity(Product product)
+    {
+        if (!quantities.TryGetValue(product.Code, out int quantity))
+        {
+            quantities [product.Code] = 1;
+            return;
+        }
+
+        if(quantity < 1)
+        {
+            quantities[product.Code] = 1;
+        }
+        else if (quantity > product.Stock)
+        {
+            quantities[product.Code] = product.Stock;
+        }
     }
 }

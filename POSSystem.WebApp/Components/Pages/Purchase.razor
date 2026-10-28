@@ -1,0 +1,115 @@
+﻿@page "/Purchase"
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using POSSystem.WebApp.Services
+@using POSSystem.WebApp.Models
+
+@inject CartService Cart
+
+<PageTitle>購入カート</PageTitle>
+
+<h3>購入カート</h3>
+
+@if (!string.IsNullOrEmpty(Cart.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @Cart.ErrorMessage
+    </div>
+}
+
+@if (Cart.Items.Count == 0)
+{
+    <div class="alert alert-info">
+        カートに商品がありません。
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped alien-middle">
+            <thead>
+                <tr>
+                    <th>商品名</th>
+                    <th>単価</th>
+                    <th style="width: 180px;">購入個数</th>
+                    <th>小計</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            
+            <tbody>
+                @foreach (var item in Cart.Items.ToList())
+                {
+                    <tr @key="item">
+                        <td>@item.Product.Name</td>
+                        <td>@item.Product.Price.ToString("N0")円</td>
+
+                        <td>
+                            <input type="number"
+                                   class="form-control"
+                                   min="1"
+                                   max="@item.Product.Stock"
+                                   value="@item.Quantity"
+                                   @onchange="e => ChangeQuantity(item, e.Value?.ToString())" />
+
+                            <small class="text-muted">
+                                在庫 : @item.Product.Stock 個
+                            </small>
+                        </td>
+
+
+                        <td>@item.Subtotal.ToString("N0")円</td>
+
+                        <td>
+                            <button class="btn btn-danger btn-sm" @onclick="() => RemoveItem(item)">
+                                削除
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-end mt-4">
+        <div class="text-end">
+            <h4>
+                合計金額:
+                <span class="text-primary">
+                    @Cart.TotalAmount.ToString("N0")円
+                </span>
+            </h4>
+
+            <button class="btn btn-outline-secondary mt-2" @onclick="ClearCart">
+                カートを空にする
+            </button>
+        </div>
+    </div>
+}
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await Cart.LoadCartAsync();
+    }
+
+
+    private void ChangeQuantity(CartItem item, string? value)
+    {
+        if (!int.TryParse(value, out int quantity))
+        {
+            return;
+        }
+
+        Cart.UpdateQuantity(item, quantity);
+    }
+
+    private void RemoveItem(CartItem item)
+    {
+        Cart.RemoveProduct(item);
+    }
+
+    private void ClearCart()
+    {
+        Cart.Clear();
+    }
+}

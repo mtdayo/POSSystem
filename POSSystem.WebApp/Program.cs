@@ -3,6 +3,7 @@ using POSSystem.WebApp.Components;
 using POSSystem.WebApp.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using POSSystem.WebApp.Components.Pages;
+using POSSystem.Infrastructure.Repositories;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,10 +46,10 @@ builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddControllersWithViews();
 
-//依存性注入の設定
-//builder.Services.AddSingleton<AuthState>(); //テスト用
 
-//builder.Services.AddScoped<AuthState>(); //本番用
+builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<CartRepository>();
+
 
 //認証状態
 builder.Services.AddAuthenticationCore();

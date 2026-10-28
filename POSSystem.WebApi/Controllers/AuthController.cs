@@ -69,6 +69,7 @@ namespace POSSystem.WebApi.Controllers
 
             return Ok(new
             {
+                accountId = account.Id,
                 token = tokenString,
                 isEmployee = account.IsEmployee
             });
