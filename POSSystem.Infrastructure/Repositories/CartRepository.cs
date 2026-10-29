@@ -23,7 +23,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             string selectSql = """
                 SELECT Id, AccountId
-                FROM Carts
+                FROM Cart
                 WHERE AccountId = @AccountId
                 """;
 
@@ -45,7 +45,7 @@ namespace POSSystem.Infrastructure.Repositories
             reader.Close();
 
             string insertSql = """
-                INSERT INTO Carts (AccountId)
+                INSERT INTO Cart (AccountId)
                 VALUES (@AccountId)
                 """;
 

@@ -218,5 +218,20 @@ namespace POSSystem.Infrastructure.Repositories
 
             return products;
         }
+
+        public bool ReduceStock(SqliteConnection connection, SqliteTransaction transaction, string productCode, int quantity)
+        {
+            string sql = """
+                UPDATE Products
+                SET Stock = Stock - @Quantity
+                WHERE Code = @Code AND Stock >= @Quantity
+                """;
+
+            using var command = new SqliteCommand(sql, connection, transaction);
+            command.Parameters.AddWithValue("@Quantity", quantity);
+            command.Parameters.AddWithValue("@Code", productCode);
+
+            return command.ExecuteNonQuery() == 1;
+        }
     }
 }

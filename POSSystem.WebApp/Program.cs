@@ -49,6 +49,7 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<CartRepository>();
+builder.Services.AddScoped<PurchaseRepository>();
 
 
 //認証状態

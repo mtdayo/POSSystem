@@ -1,10 +1,14 @@
 ﻿@page "/Purchase"
 
+@using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
-@using POSSystem.WebApp.Services
+@using POSSystem.Infrastructure.Repositories
 @using POSSystem.WebApp.Models
+@using POSSystem.WebApp.Services
 
 @inject CartService Cart
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject PurchaseRepository PurchaseRepository
 
 <PageTitle>購入カート</PageTitle>
 
@@ -80,13 +84,34 @@ else
                 </span>
             </h4>
 
+            <button class="btn btn-primary"
+                    @onclick="PurchaseAsync"
+                    disabled="@isPurchasing">
+            @(isPurchasing ? "購入処理中..." : "購入する")
+            </button>
+
             <button class="btn btn-outline-secondary mt-2" @onclick="ClearCart">
                 カートを空にする
             </button>
+
+            @if (!string.IsNullOrEmpty(message))
+            {
+                <p class="@(isSuccess ? "text-success" : "text-danger")">
+                    @message
+                </p>
+            }
+
         </div>
+
     </div>
 }
 @code {
+
+    private bool isPurchasing;
+    private string? message;
+    private bool isSuccess;
+
+
     protected override async Task OnInitializedAsync()
     {
         await Cart.LoadCartAsync();
@@ -111,5 +136,64 @@ else
     private void ClearCart()
     {
         Cart.Clear();
+    }
+
+    private async Task PurchaseAsync()
+    {
+        if (isPurchasing) return;
+
+        isPurchasing = true;
+        message = null;
+
+        try
+        {
+            //ログインユーザを取得
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            var user = authState.User;
+
+            if(user.Identity?.IsAuthenticated != true)
+            {
+                message = "ログインしてください。";
+                isSuccess = false;
+                return;
+            }
+
+            var accountIdValue = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if(!int.TryParse(accountIdValue, out var accountId))
+            {
+                message = "アカウント情報を取得出来ませんでした。";
+                isSuccess = false;
+                return;
+            }
+
+
+            //DB上のカートを使って購入処理を実行
+            int saleId = PurchaseRepository.CompletePurchase(accountId);
+
+            //購入成功時画面側のカート情報を更新
+            await Cart.LoadCartAsync();
+
+            isSuccess = true;
+            message = $"購入が完了しました。注文番号: {saleId}";
+
+
+        }
+        catch (InvalidOperationException e)
+        {
+            isSuccess = false;
+            message = e.Message;
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            isSuccess = false;
+            message = $"購入処理に失敗しました。時間をおいて再度お試しください。{ex.Message}";
+        }
+        finally
+        {
+            isPurchasing = false;
+        }
     }
 }

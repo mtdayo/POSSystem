@@ -8,43 +8,51 @@ namespace POSSystem.Infrastructure.Repositories
 {
     public class SaleRepository
     {
-        //private readonly List<Sale> _sales = new List<Sale>();
         private const string ConnectionString = @"Data Source=C:\Users\lawri\Documents\GitHub\POSSystem\POSSystem.Infrastructure\Database\pos.db";
 
-        public void AddSale(Sale sale)
+        public int AddSale(Sale sale)
         {
             using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
-            string sql = """
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+           
+                string sql = """
                 INSERT INTO Sales
                 (
+                    AccountId,
                     SaleDate,
                     TotalAmount
                 )
                 VALUES
                 (
+                    @AccountId,
                     @SaleDate,
                     @TotalAmount
                 );
                 """;
 
-            using var command = new SqliteCommand(sql, connection);
+                using var command = new SqliteCommand(sql, connection, transaction);
 
-            command.Parameters.AddWithValue("@SaleDate", sale.SaleDate.ToString("yyyy-MM-dd HH:mm:ss"));
-            command.Parameters.AddWithValue("@TotalAmount", sale.TotalAmount);
+                command.Parameters.AddWithValue("@AccountId", sale.AccountId);
+                command.Parameters.AddWithValue("@SaleDate", sale.SaleDate.ToString("yyyy-MM-dd HH:mm:ss"));
+                command.Parameters.AddWithValue("@TotalAmount", sale.TotalAmount);
 
-            command.ExecuteNonQuery();
+                command.ExecuteNonQuery();
 
-            string idSql = "SELECT last_insert_rowid();";
-            using var idCommand = new SqliteCommand(idSql, connection);
 
-            long saleId = (long)idCommand.ExecuteScalar();
+                string idSql = "SELECT last_insert_rowid();";
+                using var idCommand = new SqliteCommand(idSql, connection, transaction);
 
-            foreach (var item in sale.Items)
-            {
-                string itemSql = """
+                int saleId = Convert.ToInt32(idCommand.ExecuteScalar());
+
+                foreach (var item in sale.Items)
+                {
+                    string itemSql = """
                     INSERT INTO SaleItems
                     (
                         SaleId,
@@ -64,15 +72,25 @@ namespace POSSystem.Infrastructure.Repositories
                         @SubTotal
                     );
                     """;
-                using var itemCommand = new SqliteCommand(itemSql, connection);
-                itemCommand.Parameters.AddWithValue("@SaleId", saleId);
-                itemCommand.Parameters.AddWithValue("@ProductCode", item.Product.Code);
-                itemCommand.Parameters.AddWithValue("@ProductName", item.Product.Name);
-                itemCommand.Parameters.AddWithValue("@Price", item.Product.Price);
-                itemCommand.Parameters.AddWithValue("@Quantity", item.Quantity);
-                itemCommand.Parameters.AddWithValue("@SubTotal", item.Subtotal);
-                itemCommand.ExecuteNonQuery();
-            };
+                    using var itemCommand = new SqliteCommand(itemSql, connection, transaction);
+                    itemCommand.Parameters.AddWithValue("@SaleId", saleId);
+                    itemCommand.Parameters.AddWithValue("@ProductCode", item.ProductCode);
+                    itemCommand.Parameters.AddWithValue("@ProductName", item.ProductName);
+                    itemCommand.Parameters.AddWithValue("@Price", item.Price);
+                    itemCommand.Parameters.AddWithValue("@Quantity", item.Quantity);
+                    itemCommand.Parameters.AddWithValue("@SubTotal", item.SubTotal);
+                    itemCommand.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+
+                return saleId;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         public IReadOnlyList<Sale> GetAllSales()
@@ -86,6 +104,7 @@ namespace POSSystem.Infrastructure.Repositories
             string sql = """
                 SELECT
                     Id,
+                    AccountId,
                     SaleDate,
                     TotalAmount
                 FROM Sales
@@ -101,9 +120,10 @@ namespace POSSystem.Infrastructure.Repositories
                 sales.Add(new Sale
                 (
                     reader.GetInt32(0),
-                    DateTime.Parse(reader.GetString(1)),
-                    new List<OrderItem>(),
-                    reader.GetDecimal(2)
+                    reader.GetInt32(1),
+                    DateTime.Parse(reader.GetString(2)),
+                    new List<SaleItem>(),
+                    reader.GetDecimal(3)
                 ));
             }
 
