@@ -4,6 +4,7 @@ using POSSystem.WebApp.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using POSSystem.WebApp.Components.Pages;
 using POSSystem.Infrastructure.Repositories;
+using POSSystem.Application.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +51,9 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<CartRepository>();
 builder.Services.AddScoped<PurchaseRepository>();
+builder.Services.AddScoped<AccountService>();
+builder.Services.AddScoped<AccountRepository>();
+builder.Services.AddScoped<SaleRepository>();
 
 
 //認証状態

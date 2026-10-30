@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\POSSystem.Application\POSSystem.Application.csproj" />
     <ProjectReference Include="..\POSSystem.Infrastructure\POSSystem.Infrastructure.csproj" />
   </ItemGroup>
 

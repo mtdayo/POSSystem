@@ -103,8 +103,8 @@ else
                 <tr>
                     <td>@product.Code</td>
                     <td>@product.Name</td>
-                    <td>@product.Price</td>
-                    <td>@product.Stock</td>
+                    <td>@product.Price.ToString("C0")</td>
+                    <td>@(product.Stock > 0 ? product.Stock : "在庫なし")</td>
 
                     <AuthorizeView Roles="Employee">
                         <Authorized>

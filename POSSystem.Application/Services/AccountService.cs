@@ -5,6 +5,7 @@ using Microsoft.Data.Sqlite;
 using POSSystem.Domain.Entities;
 using POSSystem.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Principal;
 
 namespace POSSystem.Application.Services
 {
@@ -69,6 +70,57 @@ namespace POSSystem.Application.Services
             var account = new Account(0, username, passwordHash, false);
 
             _repository.AddAccount(account);
+        }
+
+
+        /// <summary>
+        /// パスワードを変更するメソッド
+        /// </summary>
+        /// <param name="accountId"></param>
+        /// <param name="currentPassword"></param>
+        /// <param name="newPassword"></param>
+        public void ChangePassword(int accountId, string currentPassword, string newPassword)
+        {
+            //入力チェック
+            if(string.IsNullOrWhiteSpace(currentPassword))
+            {
+                throw new InvalidOperationException("現在のパスワードを入力してください。");
+            }
+
+            if(string.IsNullOrWhiteSpace(newPassword))
+            {
+                throw new InvalidOperationException("新しいパスワードを入力してください。");
+            }
+
+            if(currentPassword == newPassword)
+            {
+                throw new InvalidOperationException("現在のパスワードと異なるパスワードにしてください。");
+            }
+
+
+            //アカウントを取得する
+            var account = _repository.GetAccountById(accountId);
+
+            if(account == null)
+            {
+                throw new InvalidOperationException("アカウントが見つかりません。");
+            }
+
+
+            //現在のパスワードを検証
+            var result = _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, currentPassword);
+
+            if (result == PasswordVerificationResult.Failed)
+            {
+                throw new InvalidOperationException("現在のパスワードが正しくありません。");
+            }
+
+
+            //新しいパスワードをハッシュ化
+            string newPasswordHash = _passwordHasher.HashPassword(account, newPassword);
+
+            //DBを更新する
+            _repository.UpdatePasswordHash(accountId, newPasswordHash);
         }
     }
 }

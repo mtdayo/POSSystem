@@ -1,0 +1,185 @@
+﻿@page "/PurchaseHistory"
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using POSSystem.Domain.Entities
+@using POSSystem.Infrastructure.Repositories
+
+@attribute [Authorize]
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SaleRepository SaleRepository
+
+<PageTitle>購入履歴</PageTitle>
+
+<h3>購入履歴</h3>
+
+@if(isLoading)
+{
+    <p>読み込み中...</p>
+}
+else if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-warning">
+        @message
+    </div>
+}
+else if (SaleId.HasValue)
+{
+    @if (selectedSale == null)
+    {
+        <p>購入履歴が見つかりません。</p>
+    }
+    else
+    {
+        <h4>購入詳細</h4>
+
+        <p>注文番号:@selectedSale.Id</p>
+        <p>購入日時:@selectedSale.SaleDate.ToString("yyyy/MM/dd HH:mm:ss")</p>
+        <p>合計金額:@selectedSale.TotalAmount.ToString("C0")</p>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>商品コード</th>
+                    <th>商品名</th>
+                    <th>単価</th>
+                    <th>数量</th>
+                    <th>小計</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var item in saleItems)
+                {
+                    <tr>
+                        <td>@item.ProductCode</td>
+                        <td>@item.ProductName</td>
+                        <td>@item.Price.ToString("C0")</td>
+                        <td>@item.Quantity</td>
+                        <td>@item.SubTotal.ToString("C0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <a href="/PurchaseHistory" class="btn btn-secondary">
+        購入履歴一覧に戻る
+    </a>
+}
+else
+{
+    @if (sales.Count == 0)
+    {
+        <p>購入履歴がありません。</p>
+    }
+    else
+    {
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>注文番号</th>
+                    <th>購入日時</th>
+                    <th>合計金額</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sale in sales)
+                {
+                    <tr>
+                        <td>
+                            <a href="@($"/PurchaseHistory?SaleId={sale.Id}")">
+                                @sale.Id
+                            </a>
+                        </td>
+                        <td>@sale.SaleDate.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                        <td>@sale.TotalAmount.ToString("C0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+<div class="mt-3">
+    <a href="/MyPage" class="btn btn-secondary mb-3">
+        マイページに戻る
+    </a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "SaleId")]
+    public int? SaleId { get; set; }
+
+    private int accountid;
+    private bool isLoading = true;
+    private string? message;
+
+    private List<Sale> sales = new();
+    private Sale? selectedSale;
+    private IReadOnlyList<SaleItem> saleItems = new List<SaleItem>();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        message = null;
+        selectedSale = null;
+        saleItems = new List<SaleItem>();
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                message = "ログインしてください。";
+                return;
+            }
+
+            var accountIdValue = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(accountIdValue, out int accountId))
+            {
+                message = "アカウント情報を取得できませんでした。";
+                return;
+            }
+
+            //購入履歴一覧を取得
+            sales = SaleRepository
+                .GetSalesByAccountId(accountId)
+                .ToList();
+
+            if (SaleId.HasValue)
+            {
+                if (SaleId.Value <= 0)
+                {
+                    message = "指定された購入履歴が見つかりません。";
+                    return;
+                }
+
+                //一覧に存在する購入IDか確認
+                selectedSale = sales.FirstOrDefault(sale => sale.Id == SaleId.Value);
+
+                if (selectedSale == null)
+                {
+                    message = "指定された購入履歴が見つかりません。";
+                    return;
+                }
+
+                //ログインユーザーの購入明細を取得
+                saleItems = SaleRepository.GetSaleItemsByAccountId(SaleId.Value, accountId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            message = $"購入履歴の取得に失敗しました。{ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

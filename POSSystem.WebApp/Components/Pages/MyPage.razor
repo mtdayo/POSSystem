@@ -1,0 +1,74 @@
+﻿@page "/MyPage"
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@attribute [Authorize]
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>マイページ</PageTitle>
+
+<h3>マイページ</h3>
+
+@if (isLoading)
+{
+    <p>読み込み中...</p>
+}
+else
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">アカウント情報</h5>
+            <p class="card-text">
+                ユーザー名 : @userName
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">パスワード変更</h5>
+                    <p class="card-text">
+                        ログインパスワードを変更します。
+                    </p>
+                    <a href="/ChangePassword" class="btn btn-primary">
+                        パスワード変更
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">購入履歴</h5>
+                    <p class="card-text">
+                        過去に購入した商品の履歴を確認できます。
+                    </p>
+                    <a href="/PurchaseHistory" class="btn btn-primary">
+                        購入履歴を確認
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string userName = "";
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        var user = authState.User;
+
+        userName = user.Identity?.Name ?? "ユーザー名";
+
+        isLoading = false;
+    }
+}

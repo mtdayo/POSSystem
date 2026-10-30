@@ -170,5 +170,86 @@ namespace POSSystem.Infrastructure.Repositories
 
             return items;
         }
+
+        /// <summary>
+        /// アカウントIDから購入履歴を取得
+        /// </summary>
+        /// <param name="accountId"></param>
+        /// <returns></returns>
+        public IReadOnlyList<Sale> GetSalesByAccountId(int accountId)
+        {
+            List<Sale> sales = new();
+
+            using var connection = new SqliteConnection(ConnectionString);
+            connection.Open();
+
+            string sql = """
+                SELECT Id, AccountId, SaleDate, TotalAmount
+                FROM Sales
+                WHERE AccountId = @AccountId
+                ORDER BY SaleDate DESC;
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+            command.Parameters.AddWithValue("@AccountId", accountId);
+
+            using var reader = command.ExecuteReader();
+
+            while(reader.Read())
+            {
+                sales.Add(new Sale(
+                    reader.GetInt32(0),
+                    reader.GetInt32(1),
+                    DateTime.Parse(reader.GetString(2)),
+                    new List<SaleItem>(),
+                    reader.GetDecimal(3)));
+            }
+
+            return sales;
+        }
+
+        public IReadOnlyList<SaleItem> GetSaleItemsByAccountId(int saleId, int accountId)
+        {
+            List<SaleItem> items = new();
+
+            using var connection = new SqliteConnection(ConnectionString);
+            connection.Open();
+
+            string sql = """
+                SELECT
+                    si.Id,
+                    si.SaleId,
+                    si.ProductCode,
+                    si.ProductName,
+                    si.Price,
+                    si.Quantity,
+                    si.SubTotal
+                FROM SaleItems si
+                INNER JOIN Sales s ON si.SaleId = s.Id
+                WHERE s.Id = @SaleId
+                AND s.AccountId = @AccountId
+                ORDER BY si.Id;
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+            command.Parameters.AddWithValue("@SaleId", saleId);
+            command.Parameters.AddWithValue("@AccountId", accountId);
+
+            using var reader = command.ExecuteReader();
+
+            while(reader.Read())
+            {
+                items.Add(new SaleItem(
+                    reader.GetInt32(0),
+                    reader.GetInt32(1),
+                    reader.GetString(2),
+                    reader.GetString(3),
+                    reader.GetDecimal(4),
+                    reader.GetInt32(5),
+                    reader.GetDecimal(6)));
+            }
+
+            return items;
+        }
     }
 }
