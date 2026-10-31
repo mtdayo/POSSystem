@@ -39,13 +39,8 @@ namespace POSSystem.WebApi.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
                 new Claim(ClaimTypes.Name, account.Username),
-                new Claim("IsEmployee", account.IsEmployee.ToString().ToLower())
+                new Claim("IsEmployee", account.IsEmployee.ToString())
             };
-
-            if (account.IsEmployee)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, "Employee"));
-            }
 
             //従業員のJWTにEmployee付与
             if (account.IsEmployee)

@@ -63,11 +63,11 @@ namespace POSSystem.Application.Services
                 throw new InvalidOperationException("そのユーザー名は既に使用されています。");
             }
 
-            var dummyAccount = new Account(0, username, "", false);
+            var dummyAccount = new Account(0, username, "", false, 0, 0);
 
             string passwordHash = _passwordHasher.HashPassword(dummyAccount, password);
 
-            var account = new Account(0, username, passwordHash, false);
+            var account = new Account(0, username, passwordHash, false, 0, 0);
 
             _repository.AddAccount(account);
         }
@@ -121,6 +121,16 @@ namespace POSSystem.Application.Services
 
             //DBを更新する
             _repository.UpdatePasswordHash(accountId, newPasswordHash);
+        }
+
+        /// <summary>
+        /// アカウントIDからアカウント情報を取得するメソッド
+        /// </summary>
+        /// <param name="accountId"></param>
+        /// <returns></returns>
+        public Account? GetAccountById(int accountId)
+        {
+            return _repository.GetAccountById(accountId);
         }
     }
 }

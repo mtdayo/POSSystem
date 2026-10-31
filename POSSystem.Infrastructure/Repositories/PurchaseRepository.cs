@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using POSSystem.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -15,7 +16,7 @@ namespace POSSystem.Infrastructure.Repositories
             public decimal SubTotal => Price * Quantity;
         }
 
-        public int CompletePurchase(int accountId)
+        public int CompletePurchase(int accountId, Payment payment)
         {
             using var connection = new SqliteConnection(ConnectionString);
 
@@ -98,9 +99,50 @@ namespace POSSystem.Infrastructure.Repositories
                     totalAmount += line.SubTotal;
                 }
 
+                //支払方法に応じて残高を確認・減算
+                if (payment == Payment.Cash)
+                {
+                    const string cashSql = """
+                        UPDATE Accounts
+                        SET CashBalance = CashBalance - @TotalAmount
+                        WHERE Id = @AccountId AND CashBalance >= @TotalAmount;
+                        """;
+
+                    using var command = new SqliteCommand(cashSql, connection, transaction);
+
+                    command.Parameters.AddWithValue("@TotalAmount", totalAmount);
+                    command.Parameters.AddWithValue("@AccountId", accountId);
+
+                    if (command.ExecuteNonQuery() != 1)
+                    {
+                        throw new InvalidOperationException("現金残高が不足しています。");
+                    }
+                }
+                else if (payment == Payment.ElectronicMoney)
+                {
+                    const string electronicMoneySql = """
+                        UPDATE Accounts
+                        SET ElectronicMoneyBalance = ElectronicMoneyBalance - @TotalAmount
+                        WHERE Id = @AccountId AND ElectronicMoneyBalance >= @TotalAmount;
+                        """;
+
+                    using var command = new SqliteCommand(electronicMoneySql, connection, transaction);
+                    command.Parameters.AddWithValue("@TotalAmount", totalAmount);
+                    command.Parameters.AddWithValue("@AccountId", accountId);
+
+                    if(command.ExecuteNonQuery() != 1)
+                    {
+                        throw new InvalidOperationException("電子マネー残高が不足しています。");
+                    }
+                }
+                else if (payment == Payment.CreditCard)
+                {
+                    throw new InvalidOperationException("クレジットカード支払いは現在未実装です。");
+                }
+
                 const string saleSql = """
-                    INSERT INTO Sales (AccountId, SaleDate, TotalAmount) 
-                    VALUES (@AccountId, @SaleDate, @TotalAmount);
+                    INSERT INTO Sales (AccountId, SaleDate, TotalAmount, Payment) 
+                    VALUES (@AccountId, @SaleDate, @TotalAmount, @Payment);
                     """;
 
                 using (var command = new SqliteCommand(saleSql, connection, transaction))
@@ -108,6 +150,7 @@ namespace POSSystem.Infrastructure.Repositories
                     command.Parameters.AddWithValue("@AccountId", accountId);
                     command.Parameters.AddWithValue("@SaleDate", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                     command.Parameters.AddWithValue("@TotalAmount", totalAmount);
+                    command.Parameters.AddWithValue("@Payment", payment.ToString());
 
                     command.ExecuteNonQuery();
                 }

@@ -22,7 +22,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             string sql = """
                 SELECT
-                    Id, Username, PasswordHash, IsEmployee
+                    Id, Username, PasswordHash, IsEmployee, CashBalance, ElectronicMoneyBalance
                 FROM Accounts
                 WHERE Username = @Username
                 """;
@@ -38,7 +38,9 @@ namespace POSSystem.Infrastructure.Repositories
                     reader.GetInt32(0),
                     reader.GetString(1),
                     reader.GetString(2),
-                    reader.GetBoolean(3)
+                    reader.GetBoolean(3),
+                    reader.GetDecimal(4),
+                    reader.GetDecimal(5)
                 );
             }
 
@@ -83,7 +85,7 @@ namespace POSSystem.Infrastructure.Repositories
             connection.Open();
 
             string sql = """
-                SELECT Id, Username, PasswordHash, IsEmployee
+                SELECT Id, Username, PasswordHash, IsEmployee, CashBalance, ElectronicMoneyBalance
                 FROM Accounts
                 WHERE Id = @Id;
                 """;
@@ -100,7 +102,10 @@ namespace POSSystem.Infrastructure.Repositories
                     reader.GetInt32(0),
                     reader.GetString(1),
                     reader.GetString(2),
-                    reader.GetBoolean(3));
+                    reader.GetBoolean(3),
+                    reader.GetDecimal(4),
+                    reader.GetDecimal(5)
+                );
             }
 
             return null;

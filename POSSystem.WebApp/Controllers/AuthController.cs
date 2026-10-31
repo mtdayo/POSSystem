@@ -35,10 +35,11 @@ namespace POSSystem.WebApp.Controllers
                 new(ClaimTypes.NameIdentifier, result.AccountId.ToString()),
                 new(ClaimTypes.Name, username),
                 new("api_access_token", result.Token),
-                new("IsEmployee", result.IsEmployee.ToString().ToLower())
+                new("IsEmployee", result.IsEmployee.ToString())
             };
 
-            if (result.IsEmployee)
+            //従業員の場合だけロールを追加
+            if(result.IsEmployee)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Employee"));
             }

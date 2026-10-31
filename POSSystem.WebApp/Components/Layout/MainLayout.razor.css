@@ -96,3 +96,13 @@ main {
         right: 0.75rem;
         top: 0.5rem;
     }
+
+.balance-row {
+    display: flex;
+    justify-content:flex-end;
+    gap:24px;
+    padding-top:10px;
+    padding-bottom:10px;
+    font-size:14px;
+    color: #555;
+}

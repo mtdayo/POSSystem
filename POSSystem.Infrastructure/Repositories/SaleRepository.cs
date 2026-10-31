@@ -1,7 +1,11 @@
-﻿using Microsoft.Data.Sqlite;
+﻿//購入履歴・売上　クエリ文
+
+using Microsoft.Data.Sqlite;
 using POSSystem.Domain.Entities;
+using POSSystem.Domain.Enums;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
 namespace POSSystem.Infrastructure.Repositories
@@ -106,7 +110,8 @@ namespace POSSystem.Infrastructure.Repositories
                     Id,
                     AccountId,
                     SaleDate,
-                    TotalAmount
+                    TotalAmount,
+                    Payment
                 FROM Sales
                 ORDER BY SaleDate DESC;
                 """;
@@ -123,7 +128,8 @@ namespace POSSystem.Infrastructure.Repositories
                     reader.GetInt32(1),
                     DateTime.Parse(reader.GetString(2)),
                     new List<SaleItem>(),
-                    reader.GetDecimal(3)
+                    reader.GetDecimal(3),
+                    Enum.Parse<Payment>(reader.GetString(4))
                 ));
             }
 
@@ -184,7 +190,7 @@ namespace POSSystem.Infrastructure.Repositories
             connection.Open();
 
             string sql = """
-                SELECT Id, AccountId, SaleDate, TotalAmount
+                SELECT Id, AccountId, SaleDate, TotalAmount, Payment
                 FROM Sales
                 WHERE AccountId = @AccountId
                 ORDER BY SaleDate DESC;
@@ -202,7 +208,9 @@ namespace POSSystem.Infrastructure.Repositories
                     reader.GetInt32(1),
                     DateTime.Parse(reader.GetString(2)),
                     new List<SaleItem>(),
-                    reader.GetDecimal(3)));
+                    reader.GetDecimal(3),
+                    Enum.Parse<Payment>(reader.GetString(4))));
+                    
             }
 
             return sales;
@@ -251,5 +259,117 @@ namespace POSSystem.Infrastructure.Repositories
 
             return items;
         }
+
+        public decimal GetTotalSales(DateTime startDate, DateTime endDate)
+        {
+            using var connection = new SqliteConnection(ConnectionString);
+            connection.Open();
+
+            string sql = """
+                SELECT COALESCE(SUM(TotalAmount), 0)
+                FROM Sales
+                WHERE SaleDate >= @StartDate AND SaleDate < @EndDate;
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+            command.Parameters.AddWithValue("@StartDate", startDate.ToString("yyyy-MM-dd HH:mm:ss"));
+            command.Parameters.AddWithValue("@EndDate", endDate.ToString("yyyy-MM-dd HH:mm:ss"));
+
+            return Convert.ToDecimal(command.ExecuteScalar());
+
+            
+        }
+
+        public IReadOnlyList<Sale> GetSalesByPeriod(DateTime startDate, DateTime endDate)
+        {
+            List<Sale> sales = new();
+
+            using var connection = new SqliteConnection(ConnectionString);
+
+            connection.Open();
+
+            string sql = """
+                SELECT
+                    Id,
+                    AccountId,
+                    SaleDate,
+                    TotalAmount,
+                    Payment
+                FROM Sales
+                WHERE SaleDate >= @StartDate AND SaleDate < @EndDate
+                ORDER BY SaleDate DESC;
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+            command.Parameters.AddWithValue("@StartDate", startDate.ToString("yyyy-MM-dd HH:mm:ss"));
+            command.Parameters.AddWithValue("@EndDate", endDate.ToString("yyyy-MM-dd HH:mm:ss"));
+
+            using var reader = command.ExecuteReader();
+
+            while(reader.Read())
+            {
+                sales.Add(new Sale(
+                    reader.GetInt32(0),
+                    reader.GetInt32(1),
+                    DateTime.Parse(reader.GetString(2)),
+                    new List<SaleItem>(),
+                    reader.GetDecimal(3),
+                    Enum.Parse<Payment>(reader.GetString(4))
+                ));
+            }
+
+            return sales;
+
+
+        }
+
+        /// <summary>
+        /// 従業員ロールが注文IDから購入明細を取得するメソッド
+        /// </summary>
+        /// <param name="saleId"></param>
+        /// <returns></returns>
+        public IReadOnlyList<SaleItem> GetSaleItemsForEmployee(int saleId)
+        {
+            List<SaleItem> items = new();
+
+            using var connection = new SqliteConnection(ConnectionString);
+
+            connection.Open();
+
+            string sql = """
+                SELECT
+                    Id,
+                    SaleId,
+                    ProductCode,
+                    ProductName,
+                    Price,
+                    Quantity,
+                    SubTotal
+                FROM SaleItems
+                WHERE SaleId = @SaleId
+                ORDER BY Id; 
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+            command.Parameters.AddWithValue("@SaleId", saleId);
+
+            using var reader = command.ExecuteReader();
+
+            while(reader.Read())
+            {
+                items.Add(new SaleItem(
+                    reader.GetInt32(0),
+                    reader.GetInt32(1),
+                    reader.GetString(2),
+                    reader.GetString(3),
+                    reader.GetDecimal(4),
+                    reader.GetInt32(5),
+                    reader.GetDecimal(6)
+                ));
+            }
+
+            return items;
+        }
+
     }
 }

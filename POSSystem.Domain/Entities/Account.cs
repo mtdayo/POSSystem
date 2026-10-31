@@ -11,12 +11,17 @@ namespace POSSystem.Domain.Entities
         public string PasswordHash { get; }
         public bool IsEmployee { get; }
 
-        public Account(int id, string username, string passwordHash, bool isEmployee)
+        public decimal CashBalance { get; }
+        public decimal ElectronicMoneyBalance { get; }
+
+        public Account(int id, string username, string passwordHash, bool isEmployee, decimal cashBalnce, decimal electronicMoneyBalance)
         {
             Id = id;
             Username = username;
             PasswordHash = passwordHash;
             IsEmployee = isEmployee;
+            CashBalance = cashBalnce;
+            ElectronicMoneyBalance = electronicMoneyBalance;
         }
     }
 }

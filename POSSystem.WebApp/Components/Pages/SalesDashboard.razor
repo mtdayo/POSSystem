@@ -1,0 +1,283 @@
+﻿@page "/SalesDashboard"
+
+@using Microsoft.AspNetCore.Authorization
+@using POSSystem.Domain.Entities
+@using POSSystem.Domain.Enums
+@using POSSystem.Infrastructure.Repositories
+@using POSSystem.WebApp.Models
+@using POSSystem.WebApp.Services
+
+@attribute [Authorize(Roles = "Employee")]
+
+@inject SaleRepository SaleRepository
+@inject SalesService SaleService
+
+<PageTitle>売上管理</PageTitle>
+
+<h3>売上管理</h3>
+
+<div class="btn-group mb-3">
+    <button class="btn @(selectedPeriod == "Today" ? "btn-primary" : "btn-outline-primary")"
+            @onclick='() => ChangePeriod("Today")'>
+        今日
+    </button>
+
+    <button class="btn @(selectedPeriod == "Month" ? "btn-primary" : "btn-outline-primary")"
+            @onclick='() => ChangePeriod("Month")'>
+        今月
+    </button>
+
+    <button class="btn @(selectedPeriod == "FiscalYear" ? "btn-primary" : "btn-outline-primary")"
+            @onclick='() => ChangePeriod("Year")'>
+        今年
+    </button>
+</div>
+
+@if (isLoading)
+{
+    <p>読み込み中...</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>注文番号</th>
+                    <th>購入日時</th>
+                    <th>売上金額</th>
+                    <th>支払方法</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(sales.Count == 0)
+                {
+                    <tr>
+                        <td colspan="4" class="text-center">
+                            売上データがありません。
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach(var sale in DisplayedSales)
+                    {
+                        <tr>
+                            <td>
+                                <a href="@($"/PurchaseHistory?SaleId={sale.Id}")">
+                                    @sale.Id
+                                </a>
+                            </td>
+                            <td>@sale.SaleDate.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                            <td>@sale.TotalAmount.ToString("C0")</td>
+                            <td>@GetPaymentName(sale.Payment)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        @if (sales.Count > 0)
+        {
+            <nav aria-label="売上一覧ページ">
+                <ui class="pagination justify-content-center">
+                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                        <button class="page-link"
+                                disabled="@(currentPage == 1)"
+                                @onclick="PreviousPage">
+                            前へ
+                        </button>
+                    </li>
+
+                    @for(int i = 1; i <= TotalPages; i++)
+                    {
+                        int page = i;
+
+                        <li class="page-item @(currentPage == page ? "active" : "")">
+                            <button class="page-link"
+                                    @onclick="() => ChangePage(page)">
+                                @(page)
+                            </button>
+                        </li>
+                    }
+
+                    <li class="page-item @(currentPage == TotalPages ? "disabled" : "")">
+                        <button class="page-link"
+                                disabled="@(currentPage == TotalPages)"
+                                @onclick="NextPage">
+                            次へ
+                        </button>
+                    </li>
+                </ui>
+            </nav>
+
+            <p class="text-center text-muted">
+                @sales.Count 件中
+                @((currentPage - 1) * pageSize + 1)
+                ～
+                @Math.Min(currentPage * pageSize, sales.Count)件を表示
+            </p>
+        }
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5>売上集計</h5>
+
+            <h4>
+                売上合計:
+                <span class="text-primary">
+                    @GetCurrentSales().ToString("C0")
+                </span>
+            </h4>
+
+            <p>
+                比較対象売上:
+                @GetPreviousSales().ToString("C0")
+            </p>
+
+            <p>
+                増減率:
+                <span class="@(GetGrowthRate() >= 0 ? "text-success" : "text-danger")">
+                    @(GetGrowthRate() >= 0 ? "+" : "")@GetGrowthRate().ToString("N1")%
+                </span>
+            </p>
+        </div>
+    </div>
+}
+
+@code {
+    private string selectedPeriod = "Today";
+    private bool isLoading = true;
+    private List<Sale> sales = new();
+    private SalesSummary summary = new();
+
+    private int pageSize = 10;
+    private int currentPage = 1;
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)sales.Count / pageSize));
+
+    private IEnumerable<Sale> DisplayedSales => sales.Skip((currentPage - 1) * pageSize)
+                                                     .Take(pageSize);
+
+
+    protected override void OnInitialized()
+    {
+        LoadSales();
+    }
+
+    private void ChangePeriod(string period)
+    {
+        selectedPeriod = period;
+
+        currentPage = 1;
+
+        LoadSales();
+    }
+
+    private void LoadSales()
+    {
+        isLoading = true;
+
+        DateTime now = DateTime.Now;
+
+        DateTime startDate;
+        DateTime endDate = now.AddSeconds(1);
+
+        switch(selectedPeriod)
+        {
+            case "Today":
+                startDate = now.Date;
+                break;
+
+            case "Month":
+                startDate = new DateTime(now.Year, now.Month, 1);
+                break;
+
+            case "Year":
+                startDate = now.Month >= 4 ? new DateTime(now.Year, 4, 1) : new DateTime(now.Year - 1, 4, 1);
+                break;
+
+            default:
+                startDate = now.Date;
+                break;
+        }
+
+        sales = SaleRepository.GetSalesByPeriod(startDate, endDate)
+                              .ToList();
+
+        summary = SaleService.GetSalesSummary();
+
+        isLoading = false;
+    }
+
+    private decimal GetCurrentSales()
+    {
+        return selectedPeriod switch
+        {
+            "Today" => summary.TodaySales,
+            "Month" => summary.MonthlySales,
+            "Year" => summary.FiscalYearSales,
+            _ => 0
+        };
+    }
+
+    private decimal GetPreviousSales()
+    {
+        return selectedPeriod switch
+        {
+            "Today" => summary.YesterdaySales,
+            "Month" => summary.PreviousMonthSales,
+            "Year" => summary.PreviousFiacalYearSales,
+            _ => 0
+        };
+    }
+
+    private decimal GetGrowthRate()
+    {
+        return selectedPeriod switch
+        {
+            "Today" => summary.TodayGrowthRate,
+            "Month" => summary.MonthlyGrowthRate,
+            "Year" => summary.FiscalYearGrowthRate,
+            _ => 0
+        };
+    }
+
+    private string GetPaymentName(Payment payment)
+    {
+        return payment switch
+        {
+            Payment.Cash => "現金",
+            Payment.CreditCard => "クレジットカード",
+            Payment.ElectronicMoney => "電子マネー",
+            _ => "その他"
+        };
+    }
+
+    private void ChangePage(int page)
+    {
+        if(page < 0 || page > TotalPages)
+        {
+            return;
+        }
+
+        currentPage = page;
+    }
+
+    private void PreviousPage()
+    {
+        if(currentPage > 1)
+        {
+            currentPage--;
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < TotalPages)
+        {
+            currentPage++;
+        }
+    }
+}

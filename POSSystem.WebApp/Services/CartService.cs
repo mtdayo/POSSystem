@@ -35,7 +35,7 @@ namespace POSSystem.WebApp.Services
         /// </summary>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public async Task LoadCartAsync()
+        public async Task LoadCartAsync(bool forceReload = false)
         {
             var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
 
@@ -58,7 +58,7 @@ namespace POSSystem.WebApp.Services
             }
 
             //同じアカウントのカートを読み込み済みなら再取得しない
-            if(_isLoaded && _accountid == accountId)
+            if(!forceReload && _isLoaded && _accountid == accountId)
             {
                 return;
             }

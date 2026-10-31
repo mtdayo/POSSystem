@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using POSSystem.Domain.Entities
 @using POSSystem.Infrastructure.Repositories
+@using POSSystem.Domain.Enums
 
 @attribute [Authorize]
 
@@ -36,8 +37,14 @@ else if (SaleId.HasValue)
         <h4>購入詳細</h4>
 
         <p>注文番号:@selectedSale.Id</p>
-        <p>購入日時:@selectedSale.SaleDate.ToString("yyyy/MM/dd HH:mm:ss")</p>
-        <p>合計金額:@selectedSale.TotalAmount.ToString("C0")</p>
+
+        @if(isEmployee)
+        {
+            <p>ユーザーID : @selectedSale.AccountId</p>
+        }
+        <p>購入日時 : @selectedSale.SaleDate.ToString("yyyy/MM/dd HH:mm:ss")</p>
+        <p>合計金額 : @selectedSale.TotalAmount.ToString("C0")</p>
+        <p>支払方法 : @GetPaymentName(selectedSale.Payment)</p>
 
         <table class="table table-bordered">
             <thead>
@@ -80,6 +87,12 @@ else
             <thead>
                 <tr>
                     <th>注文番号</th>
+
+                    @if (isEmployee)
+                    {
+                        <th>ユーザーID</th>
+                    }
+
                     <th>購入日時</th>
                     <th>合計金額</th>
                 </tr>
@@ -93,6 +106,12 @@ else
                                 @sale.Id
                             </a>
                         </td>
+
+                        @if (isEmployee)
+                        {
+                            <td>@sale.AccountId</td>
+                        }
+
                         <td>@sale.SaleDate.ToString("yyyy/MM/dd HH:mm:ss")</td>
                         <td>@sale.TotalAmount.ToString("C0")</td>
                     </tr>
@@ -111,8 +130,9 @@ else
     [SupplyParameterFromQuery(Name = "SaleId")]
     public int? SaleId { get; set; }
 
-    private int accountid;
+    //private int accountId;
     private bool isLoading = true;
+    private bool isEmployee;
     private string? message;
 
     private List<Sale> sales = new();
@@ -125,6 +145,7 @@ else
         message = null;
         selectedSale = null;
         saleItems = new List<SaleItem>();
+        sales = new List<Sale>();
 
         try
         {
@@ -138,6 +159,10 @@ else
                 return;
             }
 
+            //従業員かどうかClaimから判定
+            //bool.TryParse(user.FindFirst("IsEmployee")?.Value, out isEmployee);
+            isEmployee = user.IsInRole("Employee");
+
             var accountIdValue = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (!int.TryParse(accountIdValue, out int accountId))
@@ -147,9 +172,21 @@ else
             }
 
             //購入履歴一覧を取得
-            sales = SaleRepository
+            if(isEmployee)
+            {
+                //従業員:全ユーザーの購入履歴を閲覧可能
+                sales = SaleRepository
+                .GetAllSales()
+                .ToList();
+            }
+            else
+            {
+                //一般ユーザー:自分の購入履歴のみ閲覧可能
+                sales = SaleRepository
                 .GetSalesByAccountId(accountId)
                 .ToList();
+            }
+
 
             if (SaleId.HasValue)
             {
@@ -168,8 +205,17 @@ else
                     return;
                 }
 
-                //ログインユーザーの購入明細を取得
-                saleItems = SaleRepository.GetSaleItemsByAccountId(SaleId.Value, accountId);
+                //購入明細を取得
+                if(isEmployee)
+                {
+                    //従業員:全ユーザーの購入明細を取得可能
+                    saleItems = SaleRepository.GetSaleItemsForEmployee(SaleId.Value);
+                }
+                else
+                {
+                    //一般ユーザー:自分の購入履歴のみ取得可能
+                    saleItems = SaleRepository.GetSaleItemsByAccountId(SaleId.Value, accountId);
+                }
             }
         }
         catch (Exception ex)
@@ -181,5 +227,16 @@ else
         {
             isLoading = false;
         }
+    }
+
+    private string GetPaymentName(Payment payment)
+    {
+        return payment switch
+        {
+            Payment.Cash => "現金",
+            Payment.CreditCard => "クレジットカード",
+            Payment.ElectronicMoney => "電子マネー",
+            _ => "その他"
+        };
     }
 }

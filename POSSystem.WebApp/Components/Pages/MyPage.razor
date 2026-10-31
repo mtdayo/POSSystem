@@ -54,6 +54,24 @@ else
                 </div>
             </div>
         </div>
+
+        <AuthorizeView Roles="Employee">
+            <Authorized>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">売上管理</h5>
+                            <p class="card-text">
+                                今までの売上を確認できます。
+                            </p>
+                            <a href="/SalesDashboard" class="btn btn-primary">
+                                売上を確認
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </div>
 }
 

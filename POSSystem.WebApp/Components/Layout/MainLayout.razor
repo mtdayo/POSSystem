@@ -1,10 +1,17 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
+﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using POSSystem.WebApp.Models
 @using POSSystem.WebApp.Services
 
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject AccountApiClient AccountApiClient
+@inject BalanceStateService BalanceStateService
 
 
 @inherits LayoutComponentBase
+
+@implements IDisposable
 
 
 <div class="page">
@@ -17,7 +24,12 @@
         <AuthorizeView>
 
             <Authorized>
-                <a href="Purchase">カート</a>
+
+                @if (isGeneralUser)
+                {
+                    <a href="Purchase">カート</a>
+                }
+                    
                 <a href="mypage">マイページ</a>
                 
                 <form method="post" action="/auth/logout">
@@ -35,6 +47,21 @@
         </AuthorizeView>
         </div>
 
+        @if(isGeneralUser && balance != null)
+        {
+            <div class="balance-row px-4">
+                <span>
+                    現金残高:
+                    @balance.CashBalance.ToString("C0")
+                </span>
+
+                <span>
+                    電子マネー残高:
+                    @balance.ElectronicMoneyBalance.ToString("C0")
+                </span>
+            </div>
+        }
+
         <article class="content px-4">
             @Body
         </article>
@@ -48,22 +75,69 @@
 </div>
 
 @code {
-    // protected override void OnInitialized()
-    // {
-    //     Console.WriteLine($"MainLayout側 AuthState: {AuthState.GetHashCode()}");
+    private bool isGeneralUser;
 
-    //     AuthState.OnChange += HandleAuthStateChanged;
-    // }
+    private AccountBalance? balance;
 
-    // private void HandleAuthStateChanged()
-    // {
-    //     InvokeAsync(StateHasChanged);
-    // }
+    protected override async Task OnInitializedAsync()
+    {
+        BalanceStateService.OnChange += RefreshBalanceAsync;
 
-    // public void Dispose()
-    // {
-    //     AuthState.OnChange -= HandleAuthStateChanged;
 
-    // }
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        var user = authState.User;
+
+        var employeeValue = user.FindFirst("isEmployee")?.Value;
+
+        var token = user.FindFirst("api_access_token")?.Value;
+
+        Console.WriteLine($"認証状態: {user.Identity?.IsAuthenticated}");
+        Console.WriteLine($"IsEmployee: {employeeValue}");
+        Console.WriteLine($"JWT存在: {!string.IsNullOrWhiteSpace(token)}");
+
+        isGeneralUser = user.Identity?.IsAuthenticated == true &&
+                        string.Equals(
+                            employeeValue,
+                            "false",
+                            StringComparison.OrdinalIgnoreCase
+                        );
+
+        Console.WriteLine($"一般ユーザー判定: {isGeneralUser}");
+
+        if (isGeneralUser)
+        {
+            await LoadBalanceAsync(user);
+        }
+    }
+
+    private async Task LoadBalanceAsync(ClaimsPrincipal user)
+    {
+        var token = user.FindFirst("api_access_token")?.Value;
+
+        if(string.IsNullOrWhiteSpace(token))
+        {
+            return;
+        }
+
+        balance = await AccountApiClient.GetBalanceAsync(token);
+    }
+
+    private async void RefreshBalanceAsync()
+    {
+        await InvokeAsync(async () =>
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            await LoadBalanceAsync(authState.User);
+
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        BalanceStateService.OnChange -= RefreshBalanceAsync;
+    }
 
 }
