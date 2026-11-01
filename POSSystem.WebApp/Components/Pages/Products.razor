@@ -63,6 +63,15 @@ else
             <button class="btn btn-primary" @onclick="SearchReset">リセット</button>
         </div>
 
+        <div class="d-flex gap-2 mt-3">
+            <label>
+                <input type="checkbox"
+                       @bind="showZeroStock"
+                       @bind:after="SearchProducts" />
+                在庫0の商品を表示する
+            </label>
+        </div>
+
         <AuthorizeView Roles="Employee">
             <Authorized>
                 <div class="d-flex gap-2 mt-3">
@@ -96,7 +105,10 @@ else
                     <th>累計販売数</th>
                 }
 
+                @if (isGeneralUser)
+                {
                 <th>操作</th>
+                }
 
             </tr>
         </thead>
@@ -123,17 +135,19 @@ else
                     @if(isGeneralUser)
                     {
                         <td>
-                            <input type="number"
-                                   class="form-control form-control-sm"
-                                   min="1"
-                                   max="product.Stock"
-                                   @bind="quantities[product.Code]"
-                                   @bind:after="() => ValidateQuantity(product)"
-                                   style="width: 90px;" />
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="number"
+                                       class="form-control form-control-sm"
+                                       min="1"
+                                       max="product.Stock"
+                                       @bind="quantities[product.Code]"
+                                       @bind:after="() => ValidateQuantity(product)"
+                                       style="width: 90px;" />
 
-                            <button class="btn btn-success btn-sm" disabled="@(product.Stock <= 0)" @onclick="() => AddToCart(product)">
-                                カートに入れる
-                            </button>
+                                <button class="btn btn-success btn-sm text-nowrap" disabled="@(product.Stock <= 0)" @onclick="() => AddToCart(product)">
+                                    カートに入れる
+                                </button>
+                            </div>
                         </td>
                     }
                 </tr>
@@ -185,10 +199,23 @@ else
         </p>
     }
 
-    @if (!string.IsNullOrEmpty(cartMessage))
+    @* @if (!string.IsNullOrEmpty(cartMessage))
     {
         <div class="alert @(cartMessageIsError ? "alert-danger" : "alert-success")">
             @cartMessage
+        </div>
+    } *@
+
+    @if (!string.IsNullOrEmpty(cartMessage))
+    {
+        <div class="toast-notification @(cartMessageIsError ? "error" : "success")">
+            <span>@cartMessage</span>
+
+            <button type="button"
+                    class="toast-close"
+                    @onclick="ClearCartMessage">
+                ×
+            </button>
         </div>
     }
 
@@ -240,7 +267,15 @@ else
     private bool isGeneralUser;
     private bool isEmployee;
 
+    private int cartMessageId = 0;
+
     private string? cartMessage;
+
+    private void ClearCartMessage()
+    {
+        cartMessageId++;
+        cartMessage = null;
+    }
 
     private bool cartMessageIsError;
 
@@ -254,6 +289,9 @@ else
     //現在のページに表示する商品
     private IEnumerable<Product> DispayedProducts => (products ?? new List<Product>()).Skip((currentPage - 1) * pageSize)
                                                                                       .Take(pageSize);
+
+    //在庫0の商品を表示するかどうかのフラグ
+    private bool showZeroStock = false;
 
 
 
@@ -298,6 +336,11 @@ else
 
         products = await ProductApiClient.GetProductsAsync(searchText, sortType, sortOrder);
 
+        if (!showZeroStock)
+        {
+            products = products.Where(x => x.Stock > 0).ToList();
+        }
+
 
         InitalizeQuantities();
 
@@ -337,14 +380,32 @@ else
     private async Task SearchProducts()
     {
         products = await ProductApiClient.GetProductsAsync(searchText, sortType, sortOrder);
+
+        if (!showZeroStock)
+        {
+            products = products.Where(x => x.Stock > 0).ToList();
+        }
+
+        InitalizeQuantities();
+
+        currentPage = 1;
     }
 
     private async Task SearchReset()
     {
         products = await ProductApiClient.GetProductsAsync();
+
+        if (!showZeroStock)
+        {
+            products = products.Where(x => x.Stock > 0).ToList();
+        }
+
+        InitalizeQuantities();
+
+        currentPage = 1;
     }
 
-    private void AddToCart(Product product)
+    private async Task AddToCart(Product product)
     {
         if(!quantities.TryGetValue(product.Code, out int quantity))
         {
@@ -355,6 +416,15 @@ else
 
         cartMessageIsError = !success;
         cartMessage = success ? $"{product.Name}を{quantities[product.Code]}個カートに追加しました。" : Cart.ErrorMessage;
+
+        int messageId = ++cartMessageId;
+
+        await Task.Delay(3000);
+
+        if (messageId == cartMessageId)
+        {
+            cartMessage = null;
+        }
     }
 
     private void ValidateQuantity(Product product)
