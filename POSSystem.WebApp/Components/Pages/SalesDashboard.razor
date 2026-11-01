@@ -6,11 +6,15 @@
 @using POSSystem.Infrastructure.Repositories
 @using POSSystem.WebApp.Models
 @using POSSystem.WebApp.Services
+@using Microsoft.JSInterop
 
 @attribute [Authorize(Roles = "Employee")]
 
+@* @implements IAsyncDisposable *@
+
 @inject SaleRepository SaleRepository
 @inject SalesService SaleService
+@inject IJSRuntime JS
 
 <PageTitle>売上管理</PageTitle>
 
@@ -50,7 +54,7 @@ else
                 </tr>
             </thead>
             <tbody>
-                @if(sales.Count == 0)
+                @if (sales.Count == 0)
                 {
                     <tr>
                         <td colspan="4" class="text-center">
@@ -60,7 +64,7 @@ else
                 }
                 else
                 {
-                    @foreach(var sale in DisplayedSales)
+                    @foreach (var sale in DisplayedSales)
                     {
                         <tr>
                             <td>
@@ -80,22 +84,22 @@ else
         @if (sales.Count > 0)
         {
             <nav aria-label="売上一覧ページ">
-                <ui class="pagination justify-content-center">
+                <ul class="pagination justify-content-center">
                     <li class="page-item @(currentPage == 1 ? "disabled" : "")">
                         <button class="page-link"
-                                disabled="@(currentPage == 1)"
-                                @onclick="PreviousPage">
+                        disabled="@(currentPage == 1)"
+                        @onclick="PreviousPage">
                             前へ
                         </button>
                     </li>
 
-                    @for(int i = 1; i <= TotalPages; i++)
+                    @for (int i = 1; i <= TotalPages; i++)
                     {
                         int page = i;
 
                         <li class="page-item @(currentPage == page ? "active" : "")">
                             <button class="page-link"
-                                    @onclick="() => ChangePage(page)">
+                            @onclick="() => ChangePage(page)">
                                 @(page)
                             </button>
                         </li>
@@ -103,12 +107,12 @@ else
 
                     <li class="page-item @(currentPage == TotalPages ? "disabled" : "")">
                         <button class="page-link"
-                                disabled="@(currentPage == TotalPages)"
-                                @onclick="NextPage">
+                        disabled="@(currentPage == TotalPages)"
+                        @onclick="NextPage">
                             次へ
                         </button>
                     </li>
-                </ui>
+                </ul>
             </nav>
 
             <p class="text-center text-muted">
@@ -119,6 +123,180 @@ else
             </p>
         }
     </div>
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label>並び替え項目</label>
+            <select class="form-select" @bind="productSortType">
+                <option value="code">商品コード</option>
+                <option value="name">商品名</option>
+                <option value="quantity">売上個数</option>
+                <option value="sales">売上金額</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label>並び順</label>
+            <select class="form-select" @bind="productSortOrder">
+                <option value="asc">昇順</option>
+                <option value="desc">降順</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label>表示件数</label>
+            <select class="form-select" @bind="productSalesPageSize"
+                    @bind:after="ResetProductSalesPage">
+                <option value="5">5件</option>
+                <option value="10">10件</option>
+                <option value="20">20件</option>
+                <option value="50">50件</option>
+                <option value="100">100件</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input"
+                type="checkbox"
+                id="showZeroSales"
+                @bind="showZeroSales" />
+
+        <label class="form-check-label" for="showZeroSales">
+            売上個数0の商品を表示する
+        </label>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5>商品別売上集計</h5>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>商品コード</th>
+                            <th>商品名</th>
+                            <th>売上個数</th>
+                            <th>売上金額</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (productSales.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    商品データがありません
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in DisplayedProductSales)
+                            {
+                                <tr>
+                                    <td>@item.ProductCode</td>
+                                    <td>@item.ProductName</td>
+                                    <td>@item.TotalQuantity.ToString("N0")個</td>
+                                    <td>@item.TotalSales.ToString("C0")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+
+                @if(SortedProductSales.Any())
+                {
+                    <nav aria-label="商品別売上">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item @(productSalesCurrentPage == 1 ? "disabled" : "")">
+                                <button class="page-link"
+                                        disabled="@(productSalesCurrentPage == 1)"
+                                        @onclick="PreviousProductSalesPage">
+                                    前へ
+                                </button>
+                            </li>
+
+                            @for (int i = 1; i <= ProductSalesTotalPages; i++)
+                            {
+                                int page = i;
+
+                                <li class="page-item @(productSalesCurrentPage == page ? "active" : "")">
+                                    <button class="page-link"
+                                            @onclick="() => ChangeProductSalesPage(page)">
+                                        @(page)
+                                    </button>
+                                </li>
+                            }
+
+                            <li class="page-item @(productSalesCurrentPage == ProductSalesTotalPages ? "disabled" : "")">
+                                <button class="page-link"
+                                        disabled="@(productSalesCurrentPage == ProductSalesTotalPages)"
+                                        @onclick="NextProductSalesPage">
+                                    次へ
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+
+                    <p class="text-center text-muted">
+                        @SortedProductSales.Count() 件中
+                        @((productSalesCurrentPage - 1) * productSalesPageSize + 1)
+                        ～
+                        @Math.Min(productSalesCurrentPage * productSalesPageSize, SortedProductSales.Count())件を表示
+                    </p>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* <div class="card mt-3" id="sales-summary">
+        <div class="card-body">
+            <h5>売上集計</h5>
+
+            <h4>
+                売上合計:
+                <span class="text-primary">
+                    @GetCurrentSales().ToString("C0")
+                </span>
+            </h4>
+
+            <p>
+                比較対象売上:
+                @GetPreviousSales().ToString("C0")
+            </p>
+
+            <p>
+                増減率:
+                <span class="@(GetGrowthRate() >= 0 ? "text-success" : "text-danger")">
+                    @(GetGrowthRate() >= 0 ? "+" : "")@GetGrowthRate().ToString("N1")%
+                </span>
+            </p>
+        </div>
+    </div> *@
+
+    @* @if (showFloatingSummary)
+    {
+        <div class="sales-summary-fixed">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h6>売上集計</h6>
+                    <p class="mb-1">
+                        売上合計: @GetCurrentSales().ToString("C0")
+                    </p>
+
+                    <p class="mb-1">
+                        比較対象売上: @GetPreviousSales().ToString("C0")
+                    </p>
+
+                    <p class="mb-0">
+                        増減率: @GetGrowthRate().ToString("N1")%
+                    </p>
+                </div>
+            </div>
+        </div>
+    } *@
 
     <div class="card mt-3">
         <div class="card-body">
@@ -147,6 +325,10 @@ else
 }
 
 @code {
+    private bool showFloatingSummary = false;
+    private DotNetObjectReference<SalesDashboard>? dotNetHelper;
+
+
     private string selectedPeriod = "Today";
     private bool isLoading = true;
     private List<Sale> sales = new();
@@ -160,6 +342,42 @@ else
     private IEnumerable<Sale> DisplayedSales => sales.Skip((currentPage - 1) * pageSize)
                                                      .Take(pageSize);
 
+    private List<ProductSalesSummary> productSales = new();
+
+    //商品別の売上のソート
+    private string productSortType = "code";
+    private string productSortOrder = "asc";
+
+    //ソート後の商品別売上
+    private IEnumerable<ProductSalesSummary> SortedProductSales
+    {
+        get
+        {
+            //売上個数0の商品を除外
+            IEnumerable<ProductSalesSummary> result = showZeroSales ? productSales : productSales.Where(x => x.TotalQuantity > 0);
+            return productSortType switch
+            {
+                "name" => productSortOrder == "asc" ? result.OrderBy(x => x.ProductName) : result.OrderByDescending(x => x.ProductName),
+                "quantity" => productSortOrder == "asc" ? result.OrderBy(x => x.TotalQuantity) : result.OrderByDescending(x => x.TotalQuantity),
+                "sales" => productSortOrder == "asc" ? result.OrderBy(x => x.TotalSales) : result.OrderByDescending(x => x.TotalSales),
+                _ => productSortOrder == "asc" ? result.OrderBy(x => x.ProductCode) : result.OrderByDescending(x => x.ProductCode)
+            };
+        }
+    }
+
+    //ページング後の商品別売り上げ
+    private IEnumerable<ProductSalesSummary> DisplayedProductSales =>
+            SortedProductSales.Skip((productSalesCurrentPage - 1) * productSalesPageSize)
+                              .Take(productSalesPageSize);
+
+    //商品別売上の総ページ数
+    private int ProductSalesTotalPages => Math.Max(1, (int)Math.Ceiling((double)SortedProductSales.Count() / productSalesPageSize));
+
+    //売上個数0の商品を表示する
+    private bool showZeroSales = true;
+
+    private int productSalesPageSize = 10;
+    private int productSalesCurrentPage = 1;
 
     protected override void OnInitialized()
     {
@@ -205,6 +423,9 @@ else
 
         sales = SaleRepository.GetSalesByPeriod(startDate, endDate)
                               .ToList();
+
+        productSales = SaleRepository.GetProductSalesSummary(startDate, endDate)
+                                 .ToList();
 
         summary = SaleService.GetSalesSummary();
 
@@ -280,4 +501,70 @@ else
             currentPage++;
         }
     }
+
+    private void ChangeProductSalesPage(int page)
+    {
+        if (page < 1 || page > ProductSalesTotalPages)
+        {
+            return;
+        }
+
+        productSalesCurrentPage = page;
+    }
+
+    private void PreviousProductSalesPage()
+    {
+        if (productSalesCurrentPage > 1)
+        {
+            productSalesCurrentPage--;
+        }
+    }
+
+    private void NextProductSalesPage()
+    {
+        if(productSalesCurrentPage < ProductSalesTotalPages)
+        {
+            productSalesCurrentPage++;
+        }
+    }
+
+    private void ResetProductSalesPage()
+    {
+        productSalesCurrentPage = 1;
+    }
+
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (firstRender)
+    //     {
+    //         dotNetHelper = DotNetObjectReference.Create(this);
+
+    //         await JS.InvokeVoidAsync(
+    //             "salesDashboard.initialize",
+    //             dotNetHelper
+    //         );
+    //     }
+    // }
+
+    // [JSInvokable]
+    // public Task UpdateFloatingSummary(bool show)
+    // {
+    //     showFloatingSummary = show;
+
+    //     return InvokeAsync(StateHasChanged);
+    // }
+
+    // public async ValueTask DisposeAsync()
+    // {
+    //     try
+    //     {
+    //         await JS.InvokeVoidAsync("salesDashboard,dispose");
+    //     }
+    //     catch(JSDisconnectedException)
+    //     {
+            
+    //     }
+
+    //     dotNetHelper?.Dispose();
+    // }
 }

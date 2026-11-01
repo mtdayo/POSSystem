@@ -1,14 +1,11 @@
 ﻿using Microsoft.Data.Sqlite;
 using POSSystem.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Text;
 
 namespace POSSystem.Infrastructure.Repositories
 {
     public class PurchaseRepository
     {
+        private readonly ProductRepository _productRepository = new();
         private const string ConnectionString = @"Data Source=C:\Users\lawri\Documents\GitHub\POSSystem\POSSystem.Infrastructure\Database\pos.db";
 
         private sealed record PurchaseLine(string ProductCode, string ProductName, decimal Price, int Quantity, int Stock)
@@ -184,26 +181,17 @@ namespace POSSystem.Infrastructure.Repositories
                     command.ExecuteNonQuery();
                 }
 
-                const string stockSql = """
-                    UPDATE Products
-                    SET Stock = Stock - @Quantity
-                    WHERE Code = @ProductCode
-                        AND Stock >= @Quantity;
-                    """;
 
-                foreach(var line in lines)
+                foreach (var line in lines)
                 {
-                    using var command = new SqliteCommand(stockSql, connection, transaction);
+                    bool result = _productRepository.RecordSale(connection, transaction, line.ProductCode, line.Quantity, line.Price);
 
-                    command.Parameters.AddWithValue("@Quantity", line.Quantity);
-                    command.Parameters.AddWithValue("@ProductCode", line.ProductCode);
-
-                    if(command.ExecuteNonQuery() != 1)
+                    if (!result)
                     {
                         throw new InvalidOperationException($"{line.ProductName}の在庫が足りません。");
                     }
-                    
                 }
+
 
                 //購入成功時にカートを空にする
                 const string clearCartSql = """

@@ -36,6 +36,12 @@ else
                 <option value="name">商品名</option>
                 <option value="price">価格</option>
                 <option value="stock">在庫数</option>
+                <option value="totalsold">人気順</option>
+
+                @if(isEmployee)
+                {
+                    <option value="salesAmount">累計売上金額</option>
+                }
             </select>
         </div>
 
@@ -84,21 +90,18 @@ else
                 <th>価格</th>
                 <th>在庫数</th>
 
-                <AuthorizeView Roles="Employee">
-                    <Authorized>
-                        <th>操作</th>
-                    </Authorized>
-                </AuthorizeView>
-
-                @if(isGeneralUser)
+                @if(isEmployee)
                 {
-                    <th>操作</th>
+                    <th>累計販売金額</th>
+                    <th>累計販売数</th>
                 }
+
+                <th>操作</th>
 
             </tr>
         </thead>
         <tbody>
-            @foreach (var product in products)
+            @foreach (var product in DispayedProducts)
             {
                 <tr>
                     <td>@product.Code</td>
@@ -106,14 +109,16 @@ else
                     <td>@product.Price.ToString("C0")</td>
                     <td>@(product.Stock > 0 ? product.Stock : "在庫なし")</td>
 
-                    <AuthorizeView Roles="Employee">
-                        <Authorized>
-                            <td>
-                                <a class="btn btn-primary btn-sm" href="/Products/Edit/@product.Code">編集</a>
-                                <button class="btn btn-danger ms-2" @onclick="() => DeleteProduct(product)">削除</button>
-                            </td>
-                        </Authorized>
-                    </AuthorizeView>
+                    @if(isEmployee)
+                    {
+                        <td>@product.SalesAmount.ToString("C0")</td>
+                        <td>@product.TotalSold.ToString("N0")個</td>
+                        <td>
+                            <a class="btn btn-primary btn-sm" href="/Products/Edit/@product.Code">編集</a>
+                            <button class="btn btn-danger ms-2" @onclick="() => DeleteProduct(product)">削除</button>
+                        </td>
+                    }
+
 
                     @if(isGeneralUser)
                     {
@@ -135,6 +140,50 @@ else
             }
         </tbody>
     </table>
+
+    @if (products != null && products.Count > 0)
+    {
+        <nav aria-label="商品一覧ページ">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <button class="page-link"
+                            disabled="@(currentPage == 1)"
+                            @onclick="PreviousPage">
+                        前へ
+                    </button>
+                </li>
+
+                @for(int i = 1; i <= TotalPages; i++)
+                {
+                    int page = i;
+
+                    <li class="page-item @(currentPage == page ? "active" : "")">
+                        <button class="page-link"
+                                disabled="@(currentPage == page)"
+                                @onclick="() => ChangePage(page)">
+                            @(page)
+                        </button>
+                    </li>
+                }
+
+                <li class="page-item @(currentPage == TotalPages ? "disabled" : "")">
+                    <button class="page-link"
+                            disabled="@(currentPage == TotalPages)"
+                            @onclick="NextPage">
+                        次へ
+                    </button>
+                </li>
+
+            </ul>
+        </nav>
+
+        <p class="text-center text-muted">
+            @products.Count 件中
+            @((currentPage - 1) * pageSize + 1)
+            ～
+            @Math.Min(currentPage * pageSize, products.Count)件を表示
+        </p>
+    }
 
     @if (!string.IsNullOrEmpty(cartMessage))
     {
@@ -189,12 +238,22 @@ else
     private string sortOrder = "asc";
 
     private bool isGeneralUser;
+    private bool isEmployee;
 
     private string? cartMessage;
 
     private bool cartMessageIsError;
 
     private Dictionary<string, int> quantities = new();
+
+    private int pageSize = 20;
+    private int currentPage = 1;
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)(products?.Count ?? 0) / pageSize));
+
+    //現在のページに表示する商品
+    private IEnumerable<Product> DispayedProducts => (products ?? new List<Product>()).Skip((currentPage - 1) * pageSize)
+                                                                                      .Take(pageSize);
 
 
 
@@ -223,6 +282,12 @@ else
         var employeeValue = user.FindFirst("IsEmployee")?.Value;
 
 
+        //従業員フラグ
+        isEmployee = user.Identity?.IsAuthenticated == true &&
+                        string.Equals(
+                            employeeValue,
+                            "true",
+                            StringComparison.OrdinalIgnoreCase);
 
         //ログイン済み且つEmployeeフラグが0の場合のみ一般ユーザーとする
         isGeneralUser = user.Identity?.IsAuthenticated == true &&
@@ -307,6 +372,31 @@ else
         else if (quantity > product.Stock)
         {
             quantities[product.Code] = product.Stock;
+        }
+    }
+
+    private void ChangePage(int page)
+    {
+        if(page < 1 || page > TotalPages)
+        {
+            return;
+        }
+        currentPage = page;
+    }
+
+    private void PreviousPage()
+    {
+        if(currentPage > 1)
+        {
+            currentPage--;
+        }
+    }
+
+    private void NextPage()
+    {
+        if(currentPage < TotalPages)
+        {
+            currentPage++;
         }
     }
 }

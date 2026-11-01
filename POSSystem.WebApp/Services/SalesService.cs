@@ -30,7 +30,7 @@ namespace POSSystem.WebApp.Services
 
             summary.TodaySales = _saleRepository.GetTotalSales(todayStart, now.AddSeconds(1));
 
-            summary.YesterdaySales = _saleRepository.GetTotalSales(yesterdayStart, now.AddDays(-1).AddSeconds(1));
+            summary.YesterdaySales = _saleRepository.GetTotalSales(yesterdayStart, todayStart);
 
             summary.TodayGrowthRate = CalculateGrowthRate(summary.TodaySales, summary.YesterdaySales);
 
@@ -51,7 +51,7 @@ namespace POSSystem.WebApp.Services
 
             summary.MonthlySales = _saleRepository.GetTotalSales(monthStart, now.AddSeconds(1));
 
-            summary.PreviousMonthSales = _saleRepository.GetTotalSales(previousMonthStart, previousMonthEnd);
+            summary.PreviousMonthSales = _saleRepository.GetTotalSales(previousMonthStart, monthStart);
 
             summary.MonthlyGrowthRate = CalculateGrowthRate(summary.MonthlySales, summary.PreviousMonthSales);
 

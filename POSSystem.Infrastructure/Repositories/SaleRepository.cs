@@ -3,10 +3,7 @@
 using Microsoft.Data.Sqlite;
 using POSSystem.Domain.Entities;
 using POSSystem.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
+using POSSystem.WebApp.Models;
 
 namespace POSSystem.Infrastructure.Repositories
 {
@@ -369,6 +366,53 @@ namespace POSSystem.Infrastructure.Repositories
             }
 
             return items;
+        }
+
+        public IReadOnlyList<ProductSalesSummary> GetProductSalesSummary(DateTime startDate, DateTime endDate)
+        {
+            List<ProductSalesSummary> summaries = new();
+
+            using var connection = new SqliteConnection(ConnectionString);
+            connection.Open();
+
+            string sql = """
+                SELECT
+                    p.Code,
+                    p.Name,
+                    COALESCE(SUM(si.Quantity), 0) AS TotalQuantity,
+                    COALESCE(SUM(si.SubTotal), 0) AS TotalSales
+                FROM Products p
+                LEFT JOIN (
+                    SELECT
+                        si.ProductCode,
+                        si.Quantity,
+                        si.SubTotal
+                    FROM SaleItems si
+                    INNER JOIN Sales s ON si.SaleId = s.Id
+                    WHERE s.SaleDate >= @StartDate AND s.SaleDate < @EndDate) si
+                ON p.Code = si.ProductCode
+                GROUP BY p.Code, p.Name
+                ORDER BY p.Code;
+                """;
+
+            using var command = new SqliteCommand(sql, connection);
+            command.Parameters.AddWithValue("@StartDate", startDate.ToString("yyyy-MM-dd HH:mm:ss"));
+            command.Parameters.AddWithValue("@EndDate", endDate.ToString("yyyy-MM-dd HH:mm:ss"));
+
+            using var reader = command.ExecuteReader();
+
+            while(reader.Read())
+            {
+                summaries.Add(new ProductSalesSummary
+                {
+                    ProductCode = reader.GetString(0),
+                    ProductName = reader.GetString(1),
+                    TotalQuantity = reader.GetInt32(2),
+                    TotalSales = reader.GetDecimal(3)
+                });
+            }
+
+            return summaries;
         }
 
     }

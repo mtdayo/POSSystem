@@ -22,7 +22,9 @@ namespace POSSystem.Infrastructure.Repositories
                     Code,
                     Name,
                     Price,
-                    Stock
+                    Stock,
+                    SalesAmount,
+                    TotalSold
                 FROM Products
                 """;
 
@@ -37,7 +39,10 @@ namespace POSSystem.Infrastructure.Repositories
                     reader.GetString(1),
                     reader.GetString(2),
                     reader.GetDecimal(3),
-                    reader.GetInt32(4)));
+                    reader.GetInt32(4),
+                    reader.GetDecimal(5),
+                    reader.GetInt32(6)
+                ));
             }
 
             return products;
@@ -55,7 +60,9 @@ namespace POSSystem.Infrastructure.Repositories
                     Code,
                     Name,
                     Price,
-                    Stock
+                    Stock,
+                    SalesAmount,
+                    TotalSold
                 FROM Products
                 WHERE Code = @Code
                 """;
@@ -72,7 +79,9 @@ namespace POSSystem.Infrastructure.Repositories
                     reader.GetString(1),
                     reader.GetString(2),
                     reader.GetDecimal(3),
-                    reader.GetInt32(4));
+                    reader.GetInt32(4),
+                    reader.GetDecimal(5),
+                    reader.GetInt32(6));
             }
 
             return null;
@@ -172,7 +181,9 @@ namespace POSSystem.Infrastructure.Repositories
                     Code,
                     Name,
                     Price,
-                    Stock
+                    Stock,
+                    SalesAmount,
+                    TotalSold
                 FROM Products
                 """;
             if (!string.IsNullOrEmpty(search))
@@ -180,11 +191,13 @@ namespace POSSystem.Infrastructure.Repositories
                 sql += " WHERE Name LIKE @search";
             }
 
-            sql += sortBy.ToLower() switch
+            sql += sortBy.ToLowerInvariant() switch
             {
                 "name" => " ORDER BY Name",
                 "price" => " ORDER BY Price",
                 "stock" => " ORDER BY Stock",
+                "totalsold" => " ORDER BY TotalSold",
+                "salesamount" => " ORDER BY SalesAmount",
                 _ => " ORDER BY Code"
             };
 
@@ -202,7 +215,6 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            //var products = new List<Product>();
 
             while (reader.Read())
             {
@@ -212,7 +224,9 @@ namespace POSSystem.Infrastructure.Repositories
                     reader.GetString(1),
                     reader.GetString(2),
                     reader.GetDecimal(3),
-                    reader.GetInt32(4)
+                    reader.GetInt32(4),
+                    reader.GetDecimal(5),
+                    reader.GetInt32(6)
                 ));
             }
 
@@ -229,6 +243,35 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var command = new SqliteCommand(sql, connection, transaction);
             command.Parameters.AddWithValue("@Quantity", quantity);
+            command.Parameters.AddWithValue("@Code", productCode);
+
+            return command.ExecuteNonQuery() == 1;
+        }
+
+        /// <summary>
+        /// 在庫値を減らし累計値を増やすメソッド
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="productCode"></param>
+        /// <param name="quantity"></param>
+        /// <param name="unitPrice"></param>
+        /// <returns></returns>
+        public bool RecordSale(SqliteConnection connection, SqliteTransaction transaction, string productCode, int quantity, decimal unitPrice)
+        {
+            string sql = """
+                UPDATE Products
+                SET
+                    Stock = Stock - @Quantity,
+                    SalesAmount = SalesAmount + (@UnitPrice * @Quantity),
+                    TotalSold = TotalSold + @Quantity
+                WHERE
+                    Code = @Code AND Stock >= @Quantity
+                """;
+
+            using var command = new SqliteCommand(sql, connection, transaction);
+            command.Parameters.AddWithValue("@Quantity", quantity);
+            command.Parameters.AddWithValue("@UnitPrice", unitPrice);
             command.Parameters.AddWithValue("@Code", productCode);
 
             return command.ExecuteNonQuery() == 1;
