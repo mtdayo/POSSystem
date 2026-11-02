@@ -79,10 +79,10 @@ namespace POSSystem.WebApi.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new {message = ex.Message});
+                return BadRequest(new { message = ex.Message });
             }
 
-            return Ok(new {message = "会員登録が完了しました。"});
+            return Ok(new { message = "会員登録が完了しました。" });
         }
     }
 }

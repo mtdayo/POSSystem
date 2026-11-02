@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace POSSystem.Domain.Entities
+﻿namespace POSSystem.Domain.Entities
 {
     public class SaleItem
     {
@@ -14,7 +10,7 @@ namespace POSSystem.Domain.Entities
         public int Quantity { get; private set; }
         public decimal SubTotal { get; private set; }
 
-        public SaleItem (int id, int saleId, string productCode, string productName, decimal price, int quantity, decimal subTotal)
+        public SaleItem(int id, int saleId, string productCode, string productName, decimal price, int quantity, decimal subTotal)
         {
             Id = id;
             SaleId = saleId;

@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using POSSystem.Application.Services;
 using POSSystem.Application.DTOs;
+using POSSystem.Application.Services;
 using POSSystem.Domain.Entities;
-using Microsoft.AspNetCore.Authorization;
 
 namespace POSSystem.WebApi.Controllers
 {
@@ -72,7 +71,7 @@ namespace POSSystem.WebApi.Controllers
             {
                 return NotFound();
             }
-            
+
             product.Update(request.Name, request.Price, request.Stock);
 
             _productService.UpdateProduct(product);

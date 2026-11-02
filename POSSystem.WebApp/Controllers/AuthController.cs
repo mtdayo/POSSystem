@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using POSSystem.WebApp.Services;
-using Microsoft.AspNetCore.Components.Authorization;
+using System.Security.Claims;
 
 namespace POSSystem.WebApp.Controllers
 {
@@ -39,11 +38,11 @@ namespace POSSystem.WebApp.Controllers
             };
 
             //従業員の場合だけロールを追加
-            if(result.IsEmployee)
+            if (result.IsEmployee)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Employee"));
             }
-            
+
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 

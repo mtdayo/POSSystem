@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace POSSystem.Domain.Entities
+﻿namespace POSSystem.Domain.Entities
 {
     public class Product
     {
@@ -47,7 +43,7 @@ namespace POSSystem.Domain.Entities
                 throw new ArgumentOutOfRangeException(nameof(quantity), "数量は正の整数でなければなりません。");
             }
             Stock += quantity;
-        } 
+        }
 
         public void Update(string name, decimal price, int stock)
         {

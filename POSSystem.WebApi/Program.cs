@@ -1,13 +1,13 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using POSSystem.Application.Services;
 using POSSystem.Infrastructure.Repositories;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
-using System.Security.Cryptography.Xml;
-
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
 
 // Add services to the container.
 
@@ -88,7 +88,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("EmployeeOnly", policy => {
+    options.AddPolicy("EmployeeOnly", policy =>
+    {
         policy.RequireAuthenticatedUser();
         policy.RequireClaim("IsEmployee", "True");
     });

@@ -24,7 +24,7 @@ namespace POSSystem.WebApi.Controllers
             //JWTからアカウントIDを取得
             var accountIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if(!int.TryParse(accountIdValue, out int accountId))
+            if (!int.TryParse(accountIdValue, out int accountId))
             {
                 return Unauthorized();
             }

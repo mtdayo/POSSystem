@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace POSSystem.Domain.Entities
+﻿namespace POSSystem.Domain.Entities
 {
     public class Cart
     {

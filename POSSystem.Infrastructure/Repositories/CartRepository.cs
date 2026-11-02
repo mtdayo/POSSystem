@@ -1,14 +1,10 @@
 ﻿using Microsoft.Data.Sqlite;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using POSSystem.Domain.Entities;
 
 namespace POSSystem.Infrastructure.Repositories
 {
     public class CartRepository
     {
-        private const string ConnectionString = @"Data Source=C:\Users\lawri\Documents\GitHub\POSSystem\POSSystem.Infrastructure\Database\pos.db";
 
         /// <summary>
         /// アカウントに対応するカートを取得する
@@ -18,7 +14,7 @@ namespace POSSystem.Infrastructure.Repositories
         /// <returns></returns>
         public Cart GetCartByAccountId(int accountId)
         {
-            using var connection = new SqliteConnection(ConnectionString);
+            using var connection = new SqliteConnection (DatabaseConnection.ConnectionString);
             connection.Open();
 
             string selectSql = """
@@ -33,7 +29,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = selectCommand.ExecuteReader();
 
-            if(reader.Read())
+            if (reader.Read())
             {
                 return new Cart
                 {
@@ -82,7 +78,7 @@ namespace POSSystem.Infrastructure.Repositories
         {
             List<CartItem> items = new();
 
-            using var connection = new SqliteConnection(ConnectionString);
+            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
             connection.Open();
 
             string sql = """
@@ -96,7 +92,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            while(reader.Read())
+            while (reader.Read())
             {
                 items.Add(new CartItem
                 {
@@ -121,13 +117,13 @@ namespace POSSystem.Infrastructure.Repositories
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public void AddItem(int cartId, string productCode, int quantity)
         {
-            if(quantity <= 0)
+            if (quantity <= 0)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(quantity), "数量は１個以上にしてください。");
             }
 
-            using var connection = new SqliteConnection(ConnectionString);
+            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
             connection.Open();
 
             using var transaction = connection.BeginTransaction();
@@ -147,7 +143,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             int rowsAffected = updateCommand.ExecuteNonQuery();
 
-            if(rowsAffected == 0)
+            if (rowsAffected == 0)
             {
                 string insertSql = """
                     INSERT INTO CartItems (CartId, ProductCode, Quantity)
@@ -174,12 +170,12 @@ namespace POSSystem.Infrastructure.Repositories
         /// <returns></returns>
         public bool UpdateQuantity(int cartItemId, int quantity)
         {
-            if(quantity <= 0)
+            if (quantity <= 0)
             {
                 return false;
             }
 
-            using var connection = new SqliteConnection(ConnectionString);
+            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
             connection.Open();
 
             string sql = """
@@ -199,19 +195,19 @@ namespace POSSystem.Infrastructure.Repositories
 
         public bool RemoveItem(int cartItemId)
         {
-            using var connection = new SqliteConnection(ConnectionString);
-            connection.Open ();
+            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            connection.Open();
 
             string sql = """
                 DELETE FROM CartItems
                 WHERE Id = @Id
                 """;
-            
-            using var command = new SqliteCommand (sql, connection);
+
+            using var command = new SqliteCommand(sql, connection);
 
             command.Parameters.AddWithValue("@Id", cartItemId);
 
-            return command.ExecuteNonQuery () > 0;
+            return command.ExecuteNonQuery() > 0;
         }
 
 
@@ -221,7 +217,7 @@ namespace POSSystem.Infrastructure.Repositories
         /// <param name="cartId"></param>
         public void ClearItems(int cartId)
         {
-            using var connection = new SqliteConnection(ConnectionString);
+            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
             connection.Open();
 
             string sql = """

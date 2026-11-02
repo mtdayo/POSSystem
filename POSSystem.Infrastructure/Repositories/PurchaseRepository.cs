@@ -6,7 +6,7 @@ namespace POSSystem.Infrastructure.Repositories
     public class PurchaseRepository
     {
         private readonly ProductRepository _productRepository = new();
-        private const string ConnectionString = @"Data Source=C:\Users\lawri\Documents\GitHub\POSSystem\POSSystem.Infrastructure\Database\pos.db";
+
 
         private sealed record PurchaseLine(string ProductCode, string ProductName, decimal Price, int Quantity, int Stock)
         {
@@ -15,7 +15,7 @@ namespace POSSystem.Infrastructure.Repositories
 
         public int CompletePurchase(int accountId, Payment payment)
         {
-            using var connection = new SqliteConnection(ConnectionString);
+            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
 
             connection.Open();
 
@@ -64,7 +64,7 @@ namespace POSSystem.Infrastructure.Repositories
 
                     using var reader = command.ExecuteReader();
 
-                    while(reader.Read())
+                    while (reader.Read())
                     {
                         lines.Add(new PurchaseLine(
                             reader.GetString(0),
@@ -76,12 +76,12 @@ namespace POSSystem.Infrastructure.Repositories
                     }
                 }
 
-                if(lines.Count == 0)
+                if (lines.Count == 0)
                     throw new InvalidOperationException("カートに商品がありません。");
 
 
                 //商品の存在・数量・在庫を確認
-                foreach(var line in lines)
+                foreach (var line in lines)
                 {
                     if (line.Quantity <= 0) throw new InvalidOperationException($"{line.ProductName}の購入数量が不正です。");
 
@@ -127,7 +127,7 @@ namespace POSSystem.Infrastructure.Repositories
                     command.Parameters.AddWithValue("@TotalAmount", totalAmount);
                     command.Parameters.AddWithValue("@AccountId", accountId);
 
-                    if(command.ExecuteNonQuery() != 1)
+                    if (command.ExecuteNonQuery() != 1)
                     {
                         throw new InvalidOperationException("電子マネー残高が不足しています。");
                     }
@@ -167,7 +167,7 @@ namespace POSSystem.Infrastructure.Repositories
                     VALUES(@SaleId, @ProductCode, @ProductName, @Price, @Quantity, @SubTotal);
                     """;
 
-                foreach(var line in lines)
+                foreach (var line in lines)
                 {
                     using var command = new SqliteCommand(saleItemSql, connection, transaction);
 

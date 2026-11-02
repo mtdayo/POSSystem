@@ -1,10 +1,8 @@
-using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using POSSystem.Application.Services;
+using POSSystem.Infrastructure.Repositories;
 using POSSystem.WebApp.Components;
 using POSSystem.WebApp.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using POSSystem.WebApp.Components.Pages;
-using POSSystem.Infrastructure.Repositories;
-using POSSystem.Application.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);

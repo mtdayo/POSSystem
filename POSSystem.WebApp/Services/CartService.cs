@@ -2,7 +2,6 @@
 using POSSystem.Infrastructure.Repositories;
 using POSSystem.WebApp.Models;
 using System.Security.Claims;
-using System.Security.Cryptography.X509Certificates;
 
 namespace POSSystem.WebApp.Services
 {
@@ -41,7 +40,7 @@ namespace POSSystem.WebApp.Services
 
             var user = authState.User;
 
-            if(user.Identity?.IsAuthenticated != true)
+            if (user.Identity?.IsAuthenticated != true)
             {
                 Items.Clear();
                 _accountid = null;
@@ -52,13 +51,13 @@ namespace POSSystem.WebApp.Services
 
             var accountIdValue = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if(!int.TryParse(accountIdValue, out int accountId))
+            if (!int.TryParse(accountIdValue, out int accountId))
             {
                 throw new InvalidOperationException("ログイン中のアカウントIDを取得できません。");
             }
 
             //同じアカウントのカートを読み込み済みなら再取得しない
-            if(!forceReload && _isLoaded && _accountid == accountId)
+            if (!forceReload && _isLoaded && _accountid == accountId)
             {
                 return;
             }
@@ -107,13 +106,13 @@ namespace POSSystem.WebApp.Services
             ErrorMessage = null;
 
 
-            if(!EnsureCartLoaded())
+            if (!EnsureCartLoaded())
             {
                 return false;
             }
 
 
-            if(quantity <= 0)
+            if (quantity <= 0)
             {
                 ErrorMessage = "購入個数は１個以上にしてください。";
                 return false;
@@ -126,13 +125,13 @@ namespace POSSystem.WebApp.Services
             int currentQuantity = item?.Quantity ?? 0;
 
             //カートに入れた個数が在庫を超えた場合のエラーメッセージ
-            if(currentQuantity + quantity > product.Stock)
+            if (currentQuantity + quantity > product.Stock)
             {
                 ErrorMessage = $"{product.Name}の在庫が足りません。在庫数 : {product.Stock}個";
                 return false;
             }
 
-            if(item == null)
+            if (item == null)
             {
                 //先にDBへ商品を追加する
                 _cartRepository.AddItem(_cartId!.Value, product.Code, quantity);
@@ -144,7 +143,7 @@ namespace POSSystem.WebApp.Services
                 var savedItem = _cartRepository.GetItemsByCartId(_cartId.Value)
                                                .First(x => x.ProductCode == product.Code);
 
-                if(savedItem == null)
+                if (savedItem == null)
                 {
                     ErrorMessage = "カートへの商品追加に失敗しました。";
                     return false;
@@ -176,18 +175,18 @@ namespace POSSystem.WebApp.Services
         {
             ErrorMessage = null;
 
-            if(!EnsureCartLoaded())
+            if (!EnsureCartLoaded())
             {
                 return false;
             }
 
-            if(quantity <= 0)
+            if (quantity <= 0)
             {
                 ErrorMessage = "購入個数は１個以上にして下さい。";
                 return false;
             }
 
-            if(quantity > item.Product.Stock)
+            if (quantity > item.Product.Stock)
             {
                 ErrorMessage = $"{item.Product.Name}の在庫が足りません。在庫数 : {item.Product.Stock}個";
                 return false;
@@ -195,7 +194,7 @@ namespace POSSystem.WebApp.Services
 
             bool updated = _cartRepository.UpdateQuantity(item.CartItemId, quantity);
 
-            if(!updated)
+            if (!updated)
             {
                 ErrorMessage = "カートの数量を更新できませんでした。";
                 return false;
@@ -213,12 +212,12 @@ namespace POSSystem.WebApp.Services
         {
             ErrorMessage = null;
 
-            if(!EnsureCartLoaded())
+            if (!EnsureCartLoaded())
             {
                 return;
             }
 
-            if(_cartRepository.RemoveItem(item.CartItemId))
+            if (_cartRepository.RemoveItem(item.CartItemId))
             {
                 Items.Remove(item);
             }
@@ -231,7 +230,7 @@ namespace POSSystem.WebApp.Services
         {
             ErrorMessage = null;
 
-            if(!EnsureCartLoaded())
+            if (!EnsureCartLoaded())
             {
                 return;
             }
@@ -242,7 +241,7 @@ namespace POSSystem.WebApp.Services
 
         private bool EnsureCartLoaded()
         {
-            if(_isLoaded && _accountid.HasValue && _cartId.HasValue)
+            if (_isLoaded && _accountid.HasValue && _cartId.HasValue)
             {
                 return true;
             }
