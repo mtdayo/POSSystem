@@ -1,13 +1,13 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using POSSystem.Application.Services;
 using POSSystem.Infrastructure.Repositories;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using System.Text;
-using Microsoft.IdentityModel.Tokens.Experimental;
-using Microsoft.IdentityModel.Tokens;
-
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
 
 // Add services to the container.
 
@@ -15,6 +15,33 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
+//builder.Services.AddSwaggerGen(options =>
+//{
+//    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+//    {
+//        Name = "Authorization",
+//        Type = SecuritySchemeType.Http,
+//        Scheme = "bearer",
+//        BearerFormat = "JWT",
+//        In = ParameterLocation.Header,
+//        Description = "JWTを入力してください。"
+//    });
+
+//    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+//    {
+//        {
+//            new OpenApiSecurityScheme
+//            {
+//                Reference = new OpenApiReference
+//                {
+//                    Type = ReferenceType.SecurityScheme,
+//                    Id = "Bearer" // AddSecurityDefinitionで指定した名前と一致させる
+//                }
+//            },
+//            Array.Empty<string>()
+//        }
+//    });
+//});
 
 //依存性注入の設定
 builder.Services.AddScoped<ProductService>();
@@ -22,6 +49,8 @@ builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<AccountService>();
 builder.Services.AddScoped<AccountRepository>();
+builder.Services.AddScoped<SaleRepository>();
+builder.Services.AddScoped<CheckoutService>();
 
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
@@ -37,13 +66,33 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!)),
+        ClockSkew = TimeSpan.Zero
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"JWT認証失敗 : {context.Exception}");
+            return Task.CompletedTask;
+        },
+
+        OnChallenge = context =>
+        {
+            Console.WriteLine($"JWT challenge: {context.Error} / {context.ErrorDescription}");
+            return Task.CompletedTask;
+        }
     };
 });
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("EmployeeOnly", policy => policy.RequireClaim("IsEmployee", "true"));
+    options.AddPolicy("EmployeeOnly", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("IsEmployee", "True");
+    });
 });
 
 var app = builder.Build();

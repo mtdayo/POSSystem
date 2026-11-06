@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity.Data;
-using System.Net.Http.Json;
-using POSSystem.WebApp.Models;
-using System.Net.WebSockets;
+﻿using POSSystem.WebApp.Models;
 
 namespace POSSystem.WebApp.Services
 {

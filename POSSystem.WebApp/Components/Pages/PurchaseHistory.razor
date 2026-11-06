@@ -1,0 +1,399 @@
+﻿@page "/PurchaseHistory"
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using POSSystem.Domain.Entities
+@using POSSystem.Infrastructure.Repositories
+@using POSSystem.Domain.Enums
+
+@attribute [Authorize]
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SaleRepository SaleRepository
+
+<PageTitle>購入履歴</PageTitle>
+
+<h3>購入履歴</h3>
+
+@if(isLoading)
+{
+    <p>読み込み中...</p>
+}
+else if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-warning">
+        @message
+    </div>
+}
+else if (SaleId.HasValue)
+{
+    @if (selectedSale == null)
+    {
+        <p>購入履歴が見つかりません。</p>
+    }
+    else
+    {
+        <h4>購入詳細</h4>
+
+        <p>注文番号:@selectedSale.Id</p>
+
+        @if(isEmployee)
+        {
+            <p>ユーザーID : @selectedSale.AccountId</p>
+        }
+        <p>購入日時 : @selectedSale.SaleDate.ToString("yyyy/MM/dd HH:mm:ss")</p>
+        <p>合計金額 : @selectedSale.TotalAmount.ToString("C0")</p>
+        <p>支払方法 : @GetPaymentName(selectedSale.Payment)</p>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>商品コード</th>
+                    <th>商品名</th>
+                    <th>単価</th>
+                    <th>数量</th>
+                    <th>小計</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var item in saleItems)
+                {
+                    <tr>
+                        <td>@item.ProductCode</td>
+                        <td>@item.ProductName</td>
+                        <td>@item.Price.ToString("C0")</td>
+                        <td>@item.Quantity</td>
+                        <td>@item.SubTotal.ToString("C0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (saleItems.Count > 0)
+        {
+            <nav aria-label="購入履歴">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @(saleItemsCurrentPage == 1 ? "disabled" : "")">
+                        <button class="page-link"
+                                disabled="@(saleItemsCurrentPage == 1)"
+                                @onclick="PreviousPageSaleItems">
+                            前へ
+                        </button>
+                    </li>
+
+                    @for (int i = 1; i <= TotalSaleItemsPages; i++)
+                    {
+                        int page = i;
+
+                        <li class="page-item @(saleItemsCurrentPage == page ? "active" : "")">
+                            <button class="page-link"
+                                    disabled="@(saleItemsCurrentPage == page)"
+                                    @onclick="() => ChangePageSaleItems(page)">
+                                @(page)
+                            </button>
+                        </li>
+                    }
+
+                    <li class="page-item @(saleItemsCurrentPage == TotalSaleItemsPages ? "disabled" : "")">
+                        <button class="page-link"
+                                disabled="@(saleItemsCurrentPage == TotalSaleItemsPages)"
+                                @onclick="NextPageSaleItems">
+                            次へ
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
+            <p class="text-center text-muted">
+                @saleItems.Count 件中
+                @((saleItemsCurrentPage - 1) * saleItemsPageSize + 1)
+                ～
+                @Math.Min(saleItemsCurrentPage * saleItemsPageSize, saleItems.Count)件を表示
+            </p>
+        }
+    }
+
+    <a href="/PurchaseHistory" class="btn btn-secondary">
+        購入履歴一覧に戻る
+    </a>
+}
+else
+{
+    @if (sales.Count == 0)
+    {
+        <p>購入履歴がありません。</p>
+    }
+    else
+    {
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>注文番号</th>
+
+                    @if (isEmployee)
+                    {
+                        <th>ユーザーID</th>
+                    }
+
+                    <th>購入日時</th>
+                    <th>合計金額</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sale in DisplayedSales)
+                {
+                    <tr>
+                        <td>
+                            <a href="@($"/PurchaseHistory?SaleId={sale.Id}")">
+                                @sale.Id
+                            </a>
+                        </td>
+
+                        @if (isEmployee)
+                        {
+                            <td>@sale.AccountId</td>
+                        }
+
+                        <td>@sale.SaleDate.ToString("yyyy/MM/dd HH:mm:ss")</td>
+                        <td>@sale.TotalAmount.ToString("C0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (sales.Count > 0)
+        {
+            <nav aria-label="購入履歴">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @(salesCurrentPage == 1 ? "disabled" : "")">
+                        <button class="page-link"
+                                disabled="@(salesCurrentPage == 1)"
+                        @onclick="PreviousPageSales">
+                    前へ
+                        </button>
+                    </li>
+
+                    @for(int i = 1; i <= TotalSalesPages; i++)
+                    {
+                        int page = i;
+
+                        <li class="page-item @(salesCurrentPage == page ? "active" : "")">
+                            <button class="page-link"
+                                    disabled="@(salesCurrentPage == page)"
+                                    @onclick="() => ChangePageSales(page)">
+                                @(page)
+                            </button>
+                        </li>
+                    }
+
+                    <li class="page-item @(salesCurrentPage == TotalSalesPages ? "disabled" : "")">
+                        <button class="page-link"
+                                disabled="@(salesCurrentPage == TotalSalesPages)"
+                                @onclick="NextPageSales">
+                            次へ
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
+            <p class="text-center text-muted">
+                @sales.Count 件中
+                @((salesCurrentPage - 1) * salesPageSize + 1)
+                ～
+                @Math.Min(salesCurrentPage * salesPageSize, sales.Count)件を表示
+            </p>
+        }
+    }
+}
+<div class="mt-3">
+    <a href="/MyPage" class="btn btn-secondary mb-3">
+        マイページに戻る
+    </a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "SaleId")]
+    public int? SaleId { get; set; }
+
+    //private int accountId;
+    private bool isLoading = true;
+    private bool isEmployee;
+    private string? message;
+
+    private List<Sale> sales = new();
+    private Sale? selectedSale;
+    private IReadOnlyList<SaleItem> saleItems = new List<SaleItem>();
+
+    private int salesPageSize = 10;
+    private int salesCurrentPage = 1;
+
+    private int TotalSalesPages => Math.Max(1, (int)Math.Ceiling((double)sales.Count / salesPageSize));
+
+    private IEnumerable<Sale> DisplayedSales => sales.Skip((salesCurrentPage - 1) * salesPageSize)
+                                                     .Take(salesPageSize);
+
+    
+
+    private int saleItemsPageSize = 10;
+    private int saleItemsCurrentPage = 1;
+
+    private int TotalSaleItemsPages => Math.Max(1, (int)Math.Ceiling((double)saleItems.Count / saleItemsPageSize));
+
+    private IEnumerable<SaleItem> DisplayedSaleItems => saleItems.Skip((saleItemsCurrentPage - 1) * saleItemsPageSize)
+                                                     .Take(saleItemsPageSize);
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        message = null;
+        selectedSale = null;
+        saleItems = new List<SaleItem>();
+        sales = new List<Sale>();
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                message = "ログインしてください。";
+                return;
+            }
+
+            //従業員かどうかClaimから判定
+            //bool.TryParse(user.FindFirst("IsEmployee")?.Value, out isEmployee);
+            isEmployee = user.IsInRole("Employee");
+
+            var accountIdValue = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(accountIdValue, out int accountId))
+            {
+                message = "アカウント情報を取得できませんでした。";
+                return;
+            }
+
+            //購入履歴一覧を取得
+            if(isEmployee)
+            {
+                //従業員:全ユーザーの購入履歴を閲覧可能
+                sales = SaleRepository
+                .GetAllSales()
+                .ToList();
+            }
+            else
+            {
+                //一般ユーザー:自分の購入履歴のみ閲覧可能
+                sales = SaleRepository
+                .GetSalesByAccountId(accountId)
+                .ToList();
+            }
+
+
+            if (SaleId.HasValue)
+            {
+                if (SaleId.Value <= 0)
+                {
+                    message = "指定された購入履歴が見つかりません。";
+                    return;
+                }
+
+                //一覧に存在する購入IDか確認
+                selectedSale = sales.FirstOrDefault(sale => sale.Id == SaleId.Value);
+
+                if (selectedSale == null)
+                {
+                    message = "指定された購入履歴が見つかりません。";
+                    return;
+                }
+
+                //購入明細を取得
+                if(isEmployee)
+                {
+                    //従業員:全ユーザーの購入明細を取得可能
+                    saleItems = SaleRepository.GetSaleItemsForEmployee(SaleId.Value);
+                }
+                else
+                {
+                    //一般ユーザー:自分の購入履歴のみ取得可能
+                    saleItems = SaleRepository.GetSaleItemsByAccountId(SaleId.Value, accountId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            message = $"購入履歴の取得に失敗しました。{ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetPaymentName(Payment payment)
+    {
+        return payment switch
+        {
+            Payment.Cash => "現金",
+            Payment.CreditCard => "クレジットカード",
+            Payment.ElectronicMoney => "電子マネー",
+            _ => "その他"
+        };
+    }
+
+    private void ChangePageSales(int page)
+    {
+        if(page < 1 || page > TotalSalesPages)
+        {
+            return;
+        }
+
+        salesCurrentPage = page;
+    }
+
+    private void PreviousPageSales()
+    {
+        if (salesCurrentPage > 1)
+        {
+            salesCurrentPage--;
+        }
+    }
+
+    private void NextPageSales()
+    {
+        if (salesCurrentPage < TotalSalesPages)
+        {
+            salesCurrentPage++;
+        }
+    }
+
+    private void ChangePageSaleItems(int page)
+    {
+        if (page < 1 || page > TotalSaleItemsPages)
+        {
+            return;
+        }
+
+        saleItemsCurrentPage = page;
+    }
+
+    private void PreviousPageSaleItems()
+    {
+        if (saleItemsCurrentPage > 1)
+        {
+            saleItemsCurrentPage--;
+        }
+    }
+
+    private void NextPageSaleItems()
+    {
+        if (saleItemsCurrentPage < TotalSaleItemsPages)
+        {
+            saleItemsCurrentPage++;
+        }
+    }
+}

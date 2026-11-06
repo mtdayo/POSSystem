@@ -1,0 +1,276 @@
+﻿@page "/Purchase"
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using POSSystem.Infrastructure.Repositories
+@using POSSystem.WebApp.Models
+@using POSSystem.WebApp.Services
+@using POSSystem.Domain.Enums
+
+@inject CartService Cart
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject PurchaseRepository PurchaseRepository
+@inject BalanceStateService BalanceStateService
+
+<PageTitle>購入カート</PageTitle>
+
+<h3>購入カート</h3>
+
+@if (!string.IsNullOrEmpty(Cart.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @Cart.ErrorMessage
+    </div>
+}
+
+@if (Cart.Items.Count == 0)
+{
+    <div class="alert alert-info">
+        カートに商品がありません。
+    </div>
+}
+else
+{
+    @if (!isPaymentSelection)
+    {
+        <div class="table-responsive">
+            <table class="table table-striped alien-middle">
+                <thead>
+                    <tr>
+                        <th>商品名</th>
+                        <th>単価</th>
+                        <th style="width: 180px;">購入個数</th>
+                        <th>小計</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var item in Cart.Items.ToList())
+                    {
+                        <tr @key="item">
+                            <td>@item.Product.Name</td>
+                            <td>@item.Product.Price.ToString("N0")円</td>
+
+                            <td>
+                                <input type="number"
+                                class="form-control"
+                                min="1"
+                                max="@item.Product.Stock"
+                                value="@item.Quantity"
+                                @onchange="e => ChangeQuantity(item, e.Value?.ToString())" />
+
+                                <small class="text-muted">
+                                    在庫 : @item.Product.Stock 個
+                                </small>
+                            </td>
+
+
+                            <td>@item.Subtotal.ToString("N0")円</td>
+
+                            <td>
+                                <button class="btn btn-danger btn-sm" @onclick="() => RemoveItem(item)">
+                                    削除
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="d-flex justify-content-end mt-4">
+        <div class="text-end">
+            <h4>
+                合計金額:
+                <span class="text-primary">
+                    @Cart.TotalAmount.ToString("N0")円
+                </span>
+            </h4>
+
+            @if (!isPaymentSelection)
+            {
+                <button class="btn btn-outline-secondary mt-2" @onclick="ClearCart">
+                    カートを空にする
+                </button>
+            }
+
+            @if(isPaymentSelection)
+            {
+                <h4>支払方法を選択してください</h4>
+
+                <div class="mb-3">
+                    <label for="payment" class="form-label">
+                        支払方法
+                    </label>
+
+                    <InputSelect class="form-select"
+                                   @bind-Value="selectedPayment">
+                        @foreach(Payment payment in Enum.GetValues<Payment>())
+                        {
+                            <option value="@payment">@GetPaymentName(payment)</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <button class="btn btn-primary"
+                        @onclick="PurchaseAsync"
+                        disabled="@isPurchasing">
+                    支払いを確定する
+                </button>
+
+                <button class="btn btn-secondary"
+                        @onclick="BackToCart">
+                    カートに戻る
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-primary"
+                        @onclick="ShowPaymentSelection">
+                    購入する
+                </button>
+            }
+
+            
+
+        </div>
+
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <p class="@(isSuccess ? "text-success" : "text-danger")">
+        @message
+    </p>
+}
+@code {
+
+    private bool isPurchasing;
+    private string? message;
+    private bool isSuccess;
+    private bool isPaymentSelection;
+    private Payment selectedPayment = Payment.Cash;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Cart.LoadCartAsync();
+    }
+
+
+    private void ChangeQuantity(CartItem item, string? value)
+    {
+        if (!int.TryParse(value, out int quantity))
+        {
+            return;
+        }
+
+        Cart.UpdateQuantity(item, quantity);
+    }
+
+    private void RemoveItem(CartItem item)
+    {
+        Cart.RemoveProduct(item);
+    }
+
+    private void ClearCart()
+    {
+        Cart.Clear();
+    }
+
+    private async Task PurchaseAsync()
+    {
+        if (isPurchasing) return;
+
+        isPurchasing = true;
+        message = null;
+
+        try
+        {
+            //ログインユーザを取得
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            var user = authState.User;
+
+            if(user.Identity?.IsAuthenticated != true)
+            {
+                message = "ログインしてください。";
+                isSuccess = false;
+                return;
+            }
+
+            var accountIdValue = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if(!int.TryParse(accountIdValue, out var accountId))
+            {
+                message = "アカウント情報を取得出来ませんでした。";
+                isSuccess = false;
+                return;
+            }
+
+
+            //DB上のカートを使って購入処理を実行
+            int saleId = PurchaseRepository.CompletePurchase(accountId, selectedPayment);
+
+            //購入成功時画面側のカート情報を更新
+            await Cart.LoadCartAsync(forceReload: true);
+
+            BalanceStateService.NotifyBalanceChanged();
+
+            isPaymentSelection = false;
+            isSuccess = true;
+            message = $"購入が完了しました。注文番号: {saleId}";
+
+        }
+        catch (InvalidOperationException e)
+        {
+            isSuccess = false;
+            message = e.Message;
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            isSuccess = false;
+            message = $"購入処理に失敗しました。時間をおいて再度お試しください。{ex.Message}";
+        }
+        finally
+        {
+            isPurchasing = false;
+        }
+    }
+
+    private string GetPaymentName(Payment payment)
+    {
+        return payment switch
+        {
+            Payment.Cash => "現金",
+            Payment.CreditCard => "クレジットカード",
+            Payment.ElectronicMoney => "電子マネー",
+            _ => "その他"
+        };
+    }
+
+    /// <summary>
+    /// 支払方法選択画面
+    /// </summary>
+    private void ShowPaymentSelection()
+    {
+        if(Cart.Items.Count == 0)
+        {
+            return;
+        }
+
+        isPaymentSelection = true;
+    }
+
+    /// <summary>
+    /// カート画面に戻る
+    /// </summary>
+    private void BackToCart()
+    {
+        isPaymentSelection = false;
+    }
+}

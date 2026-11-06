@@ -1,8 +1,6 @@
-﻿using System.Net.Http.Json;
-using System.Runtime.CompilerServices;
-using System.Net.Http.Headers;
+﻿using Microsoft.AspNetCore.Components.Authorization;
 using POSSystem.WebApp.Models;
-using Microsoft.AspNetCore.Components.Authorization;
+using System.Net.Http.Headers;
 
 namespace POSSystem.WebApp.Services
 {
@@ -41,7 +39,7 @@ namespace POSSystem.WebApp.Services
         /// <param name="sortBy"></param>
         /// <param name="sortOrder"></param>
         /// <returns></returns>
-        public async Task<List<Product>> GetProductsAsync(string? search=null, string sortBy ="code", string sortOrder="asc")
+        public async Task<List<Product>> GetProductsAsync(string? search = null, string sortBy = "code", string sortOrder = "asc")
         {
             var url =
                 $"api/Products" +
@@ -135,7 +133,7 @@ namespace POSSystem.WebApp.Services
 
             var token = user.FindFirst("api_access_token")?.Value;
 
-            if(!string.IsNullOrWhiteSpace(token))
+            if (!string.IsNullOrWhiteSpace(token))
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }

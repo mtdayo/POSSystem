@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.AspNetCore.Identity;
 using POSSystem.Domain.Entities;
 using POSSystem.Infrastructure.Repositories;
-using Microsoft.AspNetCore.Identity;
 
 namespace POSSystem.Application.Services
 {
@@ -13,7 +9,7 @@ namespace POSSystem.Application.Services
         private readonly AccountRepository _repository;
         private readonly PasswordHasher<Account> _passwordHasher;
 
-        public AccountService (AccountRepository repository)
+        public AccountService(AccountRepository repository)
         {
             _repository = repository;
             _passwordHasher = new PasswordHasher<Account>();
@@ -62,13 +58,74 @@ namespace POSSystem.Application.Services
                 throw new InvalidOperationException("そのユーザー名は既に使用されています。");
             }
 
-            var dummyAccount = new Account(0, username, "", false);
+            var dummyAccount = new Account(0, username, "", false, 0, 0);
 
             string passwordHash = _passwordHasher.HashPassword(dummyAccount, password);
 
-            var account = new Account(0, username, passwordHash, false);
+            var account = new Account(0, username, passwordHash, false, 0, 0);
 
             _repository.AddAccount(account);
+        }
+
+
+        /// <summary>
+        /// パスワードを変更するメソッド
+        /// </summary>
+        /// <param name="accountId"></param>
+        /// <param name="currentPassword"></param>
+        /// <param name="newPassword"></param>
+        public void ChangePassword(int accountId, string currentPassword, string newPassword)
+        {
+            //入力チェック
+            if (string.IsNullOrWhiteSpace(currentPassword))
+            {
+                throw new InvalidOperationException("現在のパスワードを入力してください。");
+            }
+
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                throw new InvalidOperationException("新しいパスワードを入力してください。");
+            }
+
+            if (currentPassword == newPassword)
+            {
+                throw new InvalidOperationException("現在のパスワードと異なるパスワードにしてください。");
+            }
+
+
+            //アカウントを取得する
+            var account = _repository.GetAccountById(accountId);
+
+            if (account == null)
+            {
+                throw new InvalidOperationException("アカウントが見つかりません。");
+            }
+
+
+            //現在のパスワードを検証
+            var result = _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, currentPassword);
+
+            if (result == PasswordVerificationResult.Failed)
+            {
+                throw new InvalidOperationException("現在のパスワードが正しくありません。");
+            }
+
+
+            //新しいパスワードをハッシュ化
+            string newPasswordHash = _passwordHasher.HashPassword(account, newPassword);
+
+            //DBを更新する
+            _repository.UpdatePasswordHash(accountId, newPasswordHash);
+        }
+
+        /// <summary>
+        /// アカウントIDからアカウント情報を取得するメソッド
+        /// </summary>
+        /// <param name="accountId"></param>
+        /// <returns></returns>
+        public Account? GetAccountById(int accountId)
+        {
+            return _repository.GetAccountById(accountId);
         }
     }
 }

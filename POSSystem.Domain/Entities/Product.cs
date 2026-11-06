@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace POSSystem.Domain.Entities
+﻿namespace POSSystem.Domain.Entities
 {
     public class Product
     {
@@ -11,14 +7,18 @@ namespace POSSystem.Domain.Entities
         public string Name { get; private set; }
         public decimal Price { get; private set; }
         public int Stock { get; private set; }
+        public decimal SalesAmount { get; private set; } //累計売上金額
+        public int TotalSold { get; private set; } //累計販売数
 
-        public Product(int id, String code, string name, decimal price, int stock)
+        public Product(int id, String code, string name, decimal price, int stock, decimal salesAmount = 0, int totalSold = 0)
         {
             Id = id;
             Code = code;
             Name = name;
             Price = price;
             Stock = stock;
+            SalesAmount = salesAmount;
+            TotalSold = totalSold;
         }
 
         public void ReduceStock(int quantity)
@@ -43,7 +43,7 @@ namespace POSSystem.Domain.Entities
                 throw new ArgumentOutOfRangeException(nameof(quantity), "数量は正の整数でなければなりません。");
             }
             Stock += quantity;
-        } 
+        }
 
         public void Update(string name, decimal price, int stock)
         {

@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authentication;
+﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using POSSystem.WebApp.Services;
+using System.Security.Claims;
 
 namespace POSSystem.WebApp.Controllers
 {
@@ -31,22 +31,33 @@ namespace POSSystem.WebApp.Controllers
             //APIのログイン成功を前提にcookieの識別情報を作る
             var claims = new List<Claim>
             {
+                new(ClaimTypes.NameIdentifier, result.AccountId.ToString()),
                 new(ClaimTypes.Name, username),
                 new("api_access_token", result.Token),
-                new("IsEmployee", result.IsEmployee.ToString().ToLower())
+                new("IsEmployee", result.IsEmployee.ToString())
             };
 
+            //従業員の場合だけロールを追加
             if (result.IsEmployee)
             {
                 claims.Add(new Claim(ClaimTypes.Role, "Employee"));
             }
-            
+
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
             var principal = new ClaimsPrincipal(identity);
 
+            Console.WriteLine($"ログイン結果 IsEmployee: {result.IsEmployee}");
+
+            foreach (var claim in claims)
+            {
+                Console.WriteLine($"Cookieに設定するクレーム: {claim.Type} = {claim.Value}");
+            }
+
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+            Console.WriteLine($"ログイン中のアカウントID : {result.AccountId}");
 
             return Redirect("/Products");
 
