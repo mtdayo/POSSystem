@@ -22,7 +22,7 @@ namespace POSSystem.Application.Services
             return _repository.GetProductByCode(code);
         }
 
-        public void AddProduct(Product product)
+        public void AddProduct (Product product)
         {
             var existingProduct = _repository.GetProductByCode(product.Code);
 

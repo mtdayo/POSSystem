@@ -20,7 +20,7 @@ namespace POSSystem.WebApp.Services
 
             using var response = await _httpClient.SendAsync(request);
 
-            if (!response.IsSuccessStatusCode)
+            if(!response.IsSuccessStatusCode)
             {
                 return null;
             }

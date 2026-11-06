@@ -1,16 +1,22 @@
-﻿using Microsoft.Data.Sqlite;
-using POSSystem.Domain.Entities;
+﻿using POSSystem.Domain.Entities;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Microsoft.Data.Sqlite;
+using System.Runtime.InteropServices.Marshalling;
 
 
 namespace POSSystem.Infrastructure.Repositories
 {
     public class AccountRepository
     {
+        private const string ConnectionString = @"Data Source=C:\Users\lawri\Documents\GitHub\POSSystem\POSSystem.Infrastructure\Database\pos.db";
+
 
         //ユーザー名からアカウントを取得するメソッド
         public Account? GetAccount(string username)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
 
 
@@ -44,7 +50,7 @@ namespace POSSystem.Infrastructure.Repositories
         //アカウント情報登録用メソッド
         public void AddAccount(Account account)
         {
-            using var connenction = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connenction = new SqliteConnection(ConnectionString);
             connenction.Open();
 
             string sql = """
@@ -75,7 +81,7 @@ namespace POSSystem.Infrastructure.Repositories
         /// <returns></returns>
         public Account? GetAccountById(int accountId)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
 
             string sql = """
@@ -90,7 +96,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            if (reader.Read())
+            if(reader.Read())
             {
                 return new Account(
                     reader.GetInt32(0),
@@ -113,7 +119,7 @@ namespace POSSystem.Infrastructure.Repositories
         /// <param name="passwordHash"></param>
         public void UpdatePasswordHash(int accountId, string passwordHash)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 

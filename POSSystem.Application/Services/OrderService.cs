@@ -1,12 +1,15 @@
 ﻿using POSSystem.Domain.Entities;
 using POSSystem.Infrastructure.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace POSSystem.Application.Services
 {
     public class OrderService
     {
         private readonly ProductRepository _productRepository;
-
+        
         public OrderService(ProductRepository productRepository)
         {
             _productRepository = productRepository;
@@ -16,7 +19,7 @@ namespace POSSystem.Application.Services
             if (quantity <= 0)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(quantity),
+                    nameof(quantity), 
                     "数量は1以上でなければなりません。");
             }
 
@@ -33,7 +36,7 @@ namespace POSSystem.Application.Services
             _productRepository.UpdateStock(product);
         }
 
-        public void RemoveProduct(Order order, string code, int quantity)
+        public void RemoveProduct(Order order,string code,int quantity)
         {
             if (quantity <= 0)
             {

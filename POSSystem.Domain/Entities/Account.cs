@@ -1,4 +1,8 @@
-﻿namespace POSSystem.Domain.Entities
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace POSSystem.Domain.Entities
 {
     public class Account
     {

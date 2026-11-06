@@ -1,6 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using Microsoft.Data.Sqlite;
 using POSSystem.Domain.Entities;
 using POSSystem.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Principal;
 
 namespace POSSystem.Application.Services
 {
@@ -9,7 +14,7 @@ namespace POSSystem.Application.Services
         private readonly AccountRepository _repository;
         private readonly PasswordHasher<Account> _passwordHasher;
 
-        public AccountService(AccountRepository repository)
+        public AccountService (AccountRepository repository)
         {
             _repository = repository;
             _passwordHasher = new PasswordHasher<Account>();
@@ -77,17 +82,17 @@ namespace POSSystem.Application.Services
         public void ChangePassword(int accountId, string currentPassword, string newPassword)
         {
             //入力チェック
-            if (string.IsNullOrWhiteSpace(currentPassword))
+            if(string.IsNullOrWhiteSpace(currentPassword))
             {
                 throw new InvalidOperationException("現在のパスワードを入力してください。");
             }
 
-            if (string.IsNullOrWhiteSpace(newPassword))
+            if(string.IsNullOrWhiteSpace(newPassword))
             {
                 throw new InvalidOperationException("新しいパスワードを入力してください。");
             }
 
-            if (currentPassword == newPassword)
+            if(currentPassword == newPassword)
             {
                 throw new InvalidOperationException("現在のパスワードと異なるパスワードにしてください。");
             }
@@ -96,7 +101,7 @@ namespace POSSystem.Application.Services
             //アカウントを取得する
             var account = _repository.GetAccountById(accountId);
 
-            if (account == null)
+            if(account == null)
             {
                 throw new InvalidOperationException("アカウントが見つかりません。");
             }

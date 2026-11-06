@@ -1,4 +1,8 @@
-﻿namespace POSSystem.Domain.Entities
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace POSSystem.Domain.Entities
 {
     public class Order
     {

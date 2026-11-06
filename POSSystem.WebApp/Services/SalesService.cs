@@ -1,5 +1,6 @@
 ﻿using POSSystem.Infrastructure.Repositories;
 using POSSystem.WebApp.Models;
+using System.Security.Cryptography.X509Certificates;
 
 namespace POSSystem.WebApp.Services
 {

@@ -1,16 +1,18 @@
-﻿using Microsoft.Data.Sqlite;
-using POSSystem.Domain.Entities;
+﻿using POSSystem.Domain.Entities;
+using Microsoft.Data.Sqlite;
 
 namespace POSSystem.Infrastructure.Repositories
 {
     public class ProductRepository
     {
+        private const string ConnectionString = @"Data Source=C:\Users\lawri\Documents\GitHub\POSSystem\POSSystem.Infrastructure\Database\pos.db";
+
 
         public IReadOnlyList<Product> GetAllProducts()
         {
             List<Product> products = new();
 
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -30,7 +32,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            while (reader.Read())
+            while(reader.Read())
             {
                 products.Add(new Product(
                     reader.GetInt32(0),
@@ -48,7 +50,7 @@ namespace POSSystem.Infrastructure.Repositories
 
         public Product? GetProductByCode(string code)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -87,7 +89,7 @@ namespace POSSystem.Infrastructure.Repositories
 
         public void UpdateStock(Product product)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -105,9 +107,9 @@ namespace POSSystem.Infrastructure.Repositories
             command.ExecuteNonQuery();
         }
 
-        public void AddProduct(Product product)
+        public void AddProduct (Product product)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -125,7 +127,7 @@ namespace POSSystem.Infrastructure.Repositories
 
         public bool UpdateProduct(Product product)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -152,7 +154,7 @@ namespace POSSystem.Infrastructure.Repositories
 
         public bool DeleteProduct(string code)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -170,7 +172,7 @@ namespace POSSystem.Infrastructure.Repositories
         public List<Product> SearchProducts(string? search, string sortBy, string sortOrder)
         {
             List<Product> products = new();
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
 
             string sql = $"""

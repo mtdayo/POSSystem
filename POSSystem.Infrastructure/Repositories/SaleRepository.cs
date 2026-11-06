@@ -9,10 +9,11 @@ namespace POSSystem.Infrastructure.Repositories
 {
     public class SaleRepository
     {
+        private const string ConnectionString = @"Data Source=C:\Users\lawri\Documents\GitHub\POSSystem\POSSystem.Infrastructure\Database\pos.db";
 
         public int AddSale(Sale sale)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -20,7 +21,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             try
             {
-
+           
                 string sql = """
                 INSERT INTO Sales
                 (
@@ -97,7 +98,7 @@ namespace POSSystem.Infrastructure.Repositories
         {
             List<Sale> sales = new();
 
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -136,7 +137,7 @@ namespace POSSystem.Infrastructure.Repositories
         {
             List<OrderItem> items = new();
 
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -182,7 +183,7 @@ namespace POSSystem.Infrastructure.Repositories
         {
             List<Sale> sales = new();
 
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
 
             string sql = """
@@ -197,7 +198,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            while (reader.Read())
+            while(reader.Read())
             {
                 sales.Add(new Sale(
                     reader.GetInt32(0),
@@ -206,7 +207,7 @@ namespace POSSystem.Infrastructure.Repositories
                     new List<SaleItem>(),
                     reader.GetDecimal(3),
                     Enum.Parse<Payment>(reader.GetString(4))));
-
+                    
             }
 
             return sales;
@@ -216,7 +217,7 @@ namespace POSSystem.Infrastructure.Repositories
         {
             List<SaleItem> items = new();
 
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
 
             string sql = """
@@ -241,7 +242,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            while (reader.Read())
+            while(reader.Read())
             {
                 items.Add(new SaleItem(
                     reader.GetInt32(0),
@@ -258,7 +259,7 @@ namespace POSSystem.Infrastructure.Repositories
 
         public decimal GetTotalSales(DateTime startDate, DateTime endDate)
         {
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
 
             string sql = """
@@ -273,14 +274,14 @@ namespace POSSystem.Infrastructure.Repositories
 
             return Convert.ToDecimal(command.ExecuteScalar());
 
-
+            
         }
 
         public IReadOnlyList<Sale> GetSalesByPeriod(DateTime startDate, DateTime endDate)
         {
             List<Sale> sales = new();
 
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -302,7 +303,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            while (reader.Read())
+            while(reader.Read())
             {
                 sales.Add(new Sale(
                     reader.GetInt32(0),
@@ -328,7 +329,7 @@ namespace POSSystem.Infrastructure.Repositories
         {
             List<SaleItem> items = new();
 
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
 
             connection.Open();
 
@@ -351,7 +352,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            while (reader.Read())
+            while(reader.Read())
             {
                 items.Add(new SaleItem(
                     reader.GetInt32(0),
@@ -371,7 +372,7 @@ namespace POSSystem.Infrastructure.Repositories
         {
             List<ProductSalesSummary> summaries = new();
 
-            using var connection = new SqliteConnection(DatabaseConnection.ConnectionString);
+            using var connection = new SqliteConnection(ConnectionString);
             connection.Open();
 
             string sql = """
@@ -400,7 +401,7 @@ namespace POSSystem.Infrastructure.Repositories
 
             using var reader = command.ExecuteReader();
 
-            while (reader.Read())
+            while(reader.Read())
             {
                 summaries.Add(new ProductSalesSummary
                 {

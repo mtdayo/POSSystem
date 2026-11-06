@@ -1,4 +1,8 @@
-﻿namespace POSSystem.Application.DTOs
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace POSSystem.Application.DTOs
 {
     public class LoginRequest
     {
